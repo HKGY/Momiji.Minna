@@ -4,9 +4,15 @@ There are KaguyaHana's friends, very talented people.
 
 [Billchenchina](https://billchen.bid/)
 
+[On The Luna - iks' blog](https://blog.iks.moe/)
+
 [梓瑶233](https://ziyao233.github.io)
 
 [ChaosAttractor's Blog - 生命本没有意义，但是如果世界被我改变了，那生命就有了意义](http://lostattractor.net)
+
+[Piggy's Home](piggy.moe)
+
+[Kiritake Kumi ‘s Blog](http://blog.yazawaniko.com)
 
 [Ny3a](https://ny3a.github.io/)
 
