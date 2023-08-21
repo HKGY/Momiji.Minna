@@ -2,6 +2,8 @@ There are KaguyaHana's friends, very talented people.
 
 [mcfx's blog](https://mcfx.us)
 
+[笈川桐枝的小包包– 全新款的超级小包包～](https://blog.oikawa.moe)
+
 [Billchenchina](https://billchen.bid/)
 
 [On The Luna - iks' blog](https://blog.iks.moe/)
