@@ -8,14 +8,14 @@ There are KaguyaHana's friends, very talented people.
 
 [梓瑶233](https://ziyao233.github.io)
 
-[ChaosAttractor's Blog - 生命本没有意义，但是如果世界被我改变了，那生命就有了意义](http://lostattractor.net)
+[ChaosAttractor's Blog - 生命本没有意义，但是如果世界被我改变了，那生命就有了意义](https://lostattractor.net)
 
-[Piggy's Home](piggy.moe)
+[Piggy's Home](https://piggy.moe)
 
-[Kiritake Kumi ‘s Blog](http://blog.yazawaniko.com)
+[Kiritake Kumi ‘s Blog](https://blog.yazawaniko.com)
 
 [Ny3a](https://ny3a.github.io/)
 
-[rabbit's blog |](http://rabbithh.life)
+[rabbit's blog |](https://rabbithh.life)
 
 [Google Is Your Best Friend](https://google.com)
