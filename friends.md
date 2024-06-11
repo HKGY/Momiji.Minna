@@ -20,6 +20,6 @@ There are KaguyaHana's friends, very talented people.
 
 [rabbit's blog |](https://rabbithh.life)
 
-[文朔的快乐小站 - Vincent文朔](https://blog.vincent1230.top/)
+[云昔的小站 - Vincy云昔](https://blog.vincy1230.net/)
 
 [Google Is Your Best Friend](https://google.com)
