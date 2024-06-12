@@ -55,6 +55,8 @@ async def custom_site():
     import asyncio
     import platform
     import json
+    import random
+    import time
     from pathlib import Path
 
 
@@ -84,7 +86,8 @@ async def custom_site():
 
 
 
-    apk = "sample.apk"
+    random.seed(time.time())
+    apk = "sample.apk?" + str(random.random())
 
     bundle = "sample"
 
