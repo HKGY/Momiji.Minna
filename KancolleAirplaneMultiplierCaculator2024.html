@@ -1,0 +1,245 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@4/animate.min.css">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css">
+    <title>Aircraft Multiplier Calculator</title>
+</head>
+
+<body>
+    <div class="container-lg px-3 my-5 markdown-body">
+        What is svdata? -> <p><a class="h1" href="/20240808-data.html">Multiplier Caculator</a></p>
+        <br>
+        <textarea id="svdata" rows="20" cols="100" placeholder="Paste your svdata JSON here"></textarea>
+        <br>
+        <select id="point"></select>
+        <br>
+        <label>
+            <select id="category1"></select>
+            <input type="checkbox" id="enable1" checked> Enable
+        </label>
+        <br>
+        <label>
+            <select id="category2"></select>
+            <input type="checkbox" id="enable2" checked> Enable
+        </label>
+        <br>
+        <label>
+            <select id="category3"></select>
+            <input type="checkbox" id="enable3" checked> Enable
+        </label>
+        <br>
+        <label>
+            <select id="category4"></select>
+            <input type="checkbox" id="enable4" checked> Enable
+        </label>
+        <br>
+        <button onclick="calculate()">Calculate</button>
+        <p id="result"></p>
+        <script>
+            const categories = {
+                Fighter: `158,Bf109T改,,,TRUE,,,,,,TRUE,,Bf109T改,2,FALSE,,,,,,,,,,,,,
+159,Fw190T改,,,TRUE,,,,,,TRUE,,Fw190T改,3,FALSE,,,,,,,,,,,,
+184,Re.2001 OR改,,TRUE,,,,,,,TRUE,,Re.2001 OR改,4,FALSE,,,,,,,,,,,,
+189,Re.2005 改,TRUE,,,,,,,,TRUE,,Re.2005 改,3,FALSE,,,,,,,,,,,,
+197,F4F-3,,,TRUE,,,,,,,,F4F-3,4,FALSE,,,,,,,,,,,,
+198,F4F-4,,,TRUE,,,,,,,,F4F-4,4,FALSE,,,,,,,,,,,,
+205,F6F-3,,,TRUE,,,,,,,,F6F-3,5,FALSE,,,,,,,,,,,,
+206,F6F-5,,,TRUE,,,,,,,,F6F-5,5,FALSE,,,,,,,,,,,,
+249,Fulmar,,TRUE,,,,,,,TRUE,,Fulmar,4,FALSE,,,,,,,,,,,,
+252,Seafire Mk.III改,TRUE,,,,,,,TRUE,,,Seafire Mk.III改,4,FALSE,,,,,,,,,,,,
+254,F6F-3N,,,TRUE,,,,,,,,F6F-3N,5,FALSE,,,,,,,,,,,,
+255,F6F-5N,,,TRUE,,,,,,,,F6F-5N,5,FALSE,,,,,,,,,,,,
+353,Fw190 A-5改(熟練),,,TRUE,,,,,,TRUE,,Fw190 A-5改(熟練),4,FALSE,,,,,,,,,,,
+375,XF5U,,,TRUE,,,,,,,,XF5U,4,FALSE,,,,,,,,,,,,
+422,FR-1 Fireball,,,TRUE,,,,,,,,FR-1 Fireball,5,FALSE,,,,,,,,,,,,
+434,Corsair Mk.II,TRUE,,,,,,,TRUE,,,Corsair Mk.II,6,FALSE,,,,,,,,
+435,Corsair Mk.II(Ace),TRUE,,,,,,,TRUE,,,Corsair Mk.II(Ace),6,FALSE,,,,,,,,,,,,,
+473,F4U-2 Night Corsair,,TRUE,,,,,,TRUE,,,F4U-2 Night Corsair,6,FALSE,,,,,,,,,,,,"`,
+                Bomber: `64,Ju87C改,,TRUE,,,,,,,,,Ju87C改,4,FALSE,,,,,,,,,,,,
+195,SBD,,,TRUE,,,,,,,,SBD,4,FALSE,,,,,,,,,,,,
+233,F4U-1D,,,TRUE,,,,,,,,F4U-1D,6,FALSE,,,,,,,,,,,,
+248,Skua,,TRUE,,,,,,,,,Skua,4,FALSE,,,,,,,,,,,,
+277,FM-2,,,TRUE,,,,,,,,FM-2,4,FALSE,,,,,,,,,,,,,
+305,Ju87C改二(KMX搭載機),,TRUE,,,,,,,,,Ju87C改二(KMX搭載機),4,FALSE,,,,,,,,,,,,,
+306,Ju87C改二(KMX搭載機/熟練),,TRUE,,,,,,,,,Ju87C改二(KMX搭載機/熟練),4,FALSE,,,,,,,,,,,,
+316,Re.2001 CB改,,TRUE,,,,,,,,,Re.2001 CB改,3,FALSE,,,,,,,,,,,,
+419,SBD-5,,,TRUE,,,,,,,,SBD-5,4,FALSE,,,,,,,,,,,,
+420,SB2C-3,,,TRUE,,,,,,,,SB2C-3,5,FALSE,,,,,,,,,,,,
+421,SB2C-5,,,TRUE,,,,,,,,SB2C-5,6,FALSE,,,,,,,,,,,,
+474,F4U-4,,TRUE,,,,,,TRUE,,,F4U-4,6,FALSE,,,,,,,,,,,,
+475,AU-1,,TRUE,,,,,,TRUE,,,AU-1,6,FALSE,,,,,,,,,,,,,
+476,F4U-7,TRUE,,,,,,,TRUE,,,F4U-7,6,FALSE,,,,,,,,,,,,,"`,
+                Attacker: `188,Re.2001 G改,,TRUE,,,,,,,,,Re.2001 G改,3,FALSE,,,,,,,,,,,,,
+196,TBD,,,TRUE,,,,,,,,TBD,4,FALSE,,,,,,,,,,,,
+242,Swordfish,,,TRUE,TRUE,,,,,,,Swordfish,3,FALSE,,,,,,,,,,,,
+243,Swordfish Mk.II(熟練),,TRUE,,TRUE,,,,,,,Swordfish Mk.II(熟練),3,FALSE,,,,,,,,,,,,,
+244,Swordfish Mk.III(熟練),TRUE,,,TRUE,,,,,,,Swordfish Mk.III(熟練),3,FALSE,,,,,,,,,,,,,
+256,TBF,,,TRUE,,,,,,,,TBF,6,FALSE,,,,,,,,,,,,,
+257,TBM-3D,,,TRUE,,,,,,,,TBM-3D,6,FALSE,,,,,,,,,,,,,
+389,TBM-3W+3S,,,TRUE,,,,,,,,TBM-3W+3S,5,FALSE,,,,,,,,,,,,,
+424,Barracuda Mk.II,TRUE,,,,,,,,,,Barracuda Mk.II,4,FALSE,,,,,,,,,,,,,
+425,Barracuda Mk.III,TRUE,,,,,,,,,,Barracuda Mk.III,5,FALSE,,,,,,,,,,,,,
+481,Mosquito TR Mk.33,TRUE,,,,,,,TRUE,,,Mosquito TR Mk.33,7,FALSE,,,,,,,,,,,,,"`,
+                Fulmar: `423,Fulmar(戦闘偵察/熟練),TRUE,,,,,,,TRUE,,,Fulmar(戦闘偵察/熟練),4,FALSE,,,,,,,,,,,,,"`,
+                Recon: `163,Ro.43水偵,,,TRUE,,,,,,,,Ro.43水偵,3,FALSE,,,,,,,,,,,,,
+171,OS2U,,,TRUE,,,,,,,,OS2U,3,FALSE,,,,,,,,,,,,,
+304,S9 Osprey,,,TRUE,,,,,,,,S9 Osprey,3,FALSE,,,,,,,,,,,,,
+370,Swordfish Mk.II改(水偵型),,,TRUE,TRUE,,,,,,,Swordfish Mk.II改(水偵型),3,FALSE,,,,,,,,,,,,,
+371,Fairey Seafox改,,,TRUE,,,,,,,,Fairey Seafox改,3,FALSE,,,,,,,,,,,,,
+414,SOC Seagull,,,TRUE,,,,,,,,SOC Seagull,3,FALSE,,,,,,,,,,,,,
+415,SO3C Seamew改,,,TRUE,,,,,,,,SO3C Seamew改,4,FALSE,,,,,,,,,,,,,
+471,Loire 130M,TRUE,,,,,TRUE,,TRUE,,,Loire 130M,3,FALSE,,,,,,,,,,,,,
+510,Walrus,,TRUE,,,TRUE,,,,TRUE,,Walrus,3,FALSE,,,,,,,,,,,,,
+515,Sea Otter,TRUE,,,,TRUE,,,TRUE,,,Sea Otter,4,FALSE,,,,,,,,,,,,,
+538,Loire 130M改(熟練),TRUE,,,,,TRUE,,,,,Loire 130M改(熟練),3,FALSE,,,,,,,,,,,,,"`,
+                ReconBomber: `194,Laté 298B,,TRUE,,,,TRUE,,,,,Laté 298B,4,FALSE,,,,,,,,,,,,,
+367,Swordfish(水上機型),,,TRUE,TRUE,,,,,,,Swordfish(水上機型),3,FALSE,,,,,,,,,,,,,
+368,Swordfish Mk.III改(水上機型),,,TRUE,TRUE,,,,,,,Swordfish Mk.III改(水上機型),3,FALSE,,,,,,,,,,,,,
+369,Swordfish Mk.III改(水上機型/熟練),,,TRUE,TRUE,,,,,,,Swordfish Mk.III改(水上機型/熟練),3,FALSE,,,,,,,,,,,,,"`,
+                LandFighter: `250,Spitfire Mk.I,,,,,,,,TRUE,,,Spitfire Mk.I,4,FALSE,,,,,,,,,,,,,
+251,Spitfire Mk.V,,,,,,,,TRUE,,,Spitfire Mk.V,5,FALSE,,,,,,,,,,,,,
+253,Spitfire Mk.IX(熟練),,,,,,,,TRUE,,,Spitfire Mk.IX(熟練),4,FALSE,,,,,,,,,,,,,
+354,Fw190 D-9,,,,,,,,,TRUE,,Fw190 D-9,3,FALSE,,,,,,,,,,,,,
+516,Me 262 A-1a/R1,,,,,,,,TRUE,,,Me 262 A-1a/R1,3,FALSE,,,,,,,,,,,,,"`,
+                LandBomber: `401,Do 17 Z-2,,,,,,,,,TRUE,,Do 17 Z-2,4,FALSE,,,,,,,,,,,,,
+405,Do 217 E-5＋Hs293初期型,,,,,,,,,TRUE,,Do 217 E-5＋Hs293初期型,4,FALSE,,,,,,,,,,,,,
+406,Do 217 K-2＋Fritz-X,,,,,,,,,TRUE,,Do 217 K-2＋Fritz-X,4,FALSE,,,,,,,,,,,,,
+431,SM.79,,,,,,,,,TRUE,,SM.79,7,FALSE,,,,,,,,,,,,,
+432,SM.79 bis,,,,,,,,,TRUE,,SM.79 bis,8,FALSE,,,,,,,,,,,,,
+433,SM.79 bis(熟練),,,,,,,,TRUE,,,SM.79 bis(熟練),8,FALSE,,,,,,,,,,,,,
+459,B-25,,,,,,,,,TRUE,,B-25,7,FALSE,,,,,,,,,,,,,
+479,Mosquito FB Mk.VI,,,,,,,,TRUE,,,Mosquito FB Mk.VI,7,FALSE,,,,,,,,,,,,,"`,
+                HeavyBomber: `395,深山,,,,,,,TRUE,,,,深山,10,FALSE,,,,,,,,,,,,,
+396,深山改,,,,,,,TRUE,,,,深山改,11,FALSE,,,,,,,,,,,,,"`,
+                FlyingBoat: `178,PBY-5A Catalina,,,,,,,,,TRUE,,PBY-5A Catalina,10,FALSE,,,,,,,,,,,,,
+480,Mosquito PR Mk.IV,,,,,,,,TRUE,,,Mosquito PR Mk.IV,9,FALSE,,,,,,,,,,,,,"`,
+                EventMultiplier: `汎マップ,E1,1.05,1.04,1.03,1.00,1.00,1.00,1.00,1.00,1.00,,,,,,,,,,,,,,,,,
+汎マップ,E2,1.05,1.04,1.03,1.00,1.00,1.00,1.00,1.00,1.00,,,,,,,,,,,,,,,,,
+汎マップ,E3,1.12,1.09,1.06,1.00,1.00,1.00,1.00,1.00,1.00,,,,,,,,,,,,,,,,,"`,
+                PointMultiplier: `個別マス,E1-I,1.03,1.03,1.03,1.04,1.02,1.03,1.00,1.06,1.04,,,,,,,,,,,,,,,,,
+個別マス,E1-L,1.00,1.00,1.00,1.04,1.02,1.03,1.00,1.00,1.00,,,,,,,,,,,,,,,,,
+個別マス,E1-M,1.05,1.05,1.05,1.04,1.02,1.03,1.16,1.06,1.04,,,,,,,,,,,,,,,,,
+個別マス,E2-M,1.00,1.00,1.00,1.08,1.08,1.04,1.00,1.06,1.04,,,,,,,,,,,,,,,,,
+個別マス,E2-U,1.16,1.12,1.08,1.16,1.12,1.08,1.33,1.12,1.08,,,,,,,,,,,,,,,,,
+個別マス,E2-W,1.18,1.15,1.09,1.18,1.15,1.09,1.35,1.14,1.09,,,,,,,,,,,,,,,,,
+個別マス,E3-F,1.08,1.05,1.03,1.00,1.00,1.00,1.00,1.00,1.00,,,,,,,,,,,,,,,,,
+個別マス,E3-K,1.05,1.03,1.02,1.00,1.00,1.00,1.00,1.00,1.00,,,,,,,,,,,,,,,,,
+個別マス,E3-S,1.08,1.05,1.03,1.08,1.03,1.05,1.00,1.06,1.04,,,,,,,,,,,,,,,,,
+個別マス,E3-V1,1.04,1.03,1.03,1.08,1.08,1.04,1.00,1.06,1.04,,,,,,,,,,,,,,,,,
+個別マス,E3-X,1.09,1.07,1.05,1.15,1.08,1.04,1.32,1.06,1.04,,,,,,,,,,,,,,,,,"`
+            };
+
+            function parseCSV(data) {
+                const rows = data.trim().split('\n');
+                return rows.map(row => row.split(','));
+            }
+
+            function Table(data, seenSlotitemIds) {
+                const rows = parseCSV(data);
+                const columns = ["ID", "Name", "A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3", "Inv"];
+                return rows.map(row => {
+                    const item = Object.fromEntries(columns.map((col, idx) => [col, row[idx]]));
+                    item.Inv = seenSlotitemIds.has(item.ID);
+                    return item;
+                });
+            }
+
+            function populateSelect(id, options) {
+                const select = document.getElementById(id);
+                options.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option;
+                    opt.text = option;
+                    select.add(opt);
+                });
+            }
+
+            function initialize() {
+                const categoryOptions = Object.keys(categories).filter(key => key !== 'EventMultiplier' && key !== 'PointMultiplier');
+                const pointOptions = parseCSV(categories.PointMultiplier).map(row => row[1]);
+
+                populateSelect('point', pointOptions);
+                populateSelect('category1', categoryOptions);
+                populateSelect('category2', categoryOptions);
+                populateSelect('category3', categoryOptions);
+                populateSelect('category4', categoryOptions);
+            }
+
+            function calculate() {
+                const svdata = document.getElementById('svdata').value;
+                const p = document.getElementById('point').value;
+
+                const categoriesEnabled = [
+                    { enabled: document.getElementById('enable1').checked, category: document.getElementById('category1').value },
+                    { enabled: document.getElementById('enable2').checked, category: document.getElementById('category2').value },
+                    { enabled: document.getElementById('enable3').checked, category: document.getElementById('category3').value },
+                    { enabled: document.getElementById('enable4').checked, category: document.getElementById('category4').value }
+                ].filter(c => c.enabled);
+
+                const content = svdata.slice(7);
+                const equip = JSON.parse(content);
+                const seenSlotitemIds = new Set(equip.api_data.api_slot_item.map(item => item.api_slotitem_id.toString()));
+
+                const EM = Table(categories.EventMultiplier, seenSlotitemIds);
+                const PM = Table(categories.PointMultiplier, seenSlotitemIds);
+
+                const enabledTables = categoriesEnabled.map(c => Table(categories[c.category], seenSlotitemIds));
+
+                let maxMult = 0;
+                let project = [];
+
+                function calculateMultiplier(items) {
+                    let thisMult = 1;
+                    for (const mult of ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"]) {
+                        if (items.some(item => item[mult] === "TRUE")) {
+                            for (const i of EM) {
+                                if (i.Name.includes(p)) {
+                                    thisMult *= parseFloat(i[mult]);
+                                }
+                            }
+                            for (const i of PM) {
+                                if (i.Name === p) {
+                                    thisMult *= parseFloat(i[mult]);
+                                }
+                            }
+                        }
+                    }
+                    return thisMult;
+                }
+
+                function generateCombinations(arrays, prefix = []) {
+                    if (arrays.length === 0) {
+                        const items = prefix.filter(item => item.Inv);
+                        if (items.length === prefix.length) {
+                            const thisMult = calculateMultiplier(items);
+                            if (thisMult > maxMult) {
+                                maxMult = thisMult;
+                                project = items.map(item => item.Name);
+                            }
+                        }
+                    } else {
+                        const [first, ...rest] = arrays;
+                        for (const item of first) {
+                            generateCombinations(rest, [...prefix, item]);
+                        }
+                    }
+                }
+
+                generateCombinations(enabledTables);
+
+                document.getElementById('result').innerText = `Equipment: ${project.join(', ')}\n Max Multiplier: ${maxMult}`;
+            }
+
+            window.onload = initialize;
+        </script>
+    </div>
+    <div class="particle-container"></div>
+    <script src="script.js"></script>
+</body>
+
+</html>
