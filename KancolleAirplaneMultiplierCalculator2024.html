@@ -217,7 +217,7 @@
                         const items = prefix.filter(item => item.Inv);
                         if (items.length === prefix.length) {
                             const thisMult = calculateMultiplier(items);
-                            if (thisMult > maxMult) {
+                            if (thisMult >= maxMult) {
                                 maxMult = thisMult;
                                 project = items.map(item => item.Name);
                             }
