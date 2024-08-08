@@ -200,7 +200,7 @@
                     for (const mult of ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"]) {
                         if (items.some(item => item[mult] === "TRUE")) {
                             for (const i of EM) {
-                                if (i.Name.includes(p)) {
+                                if (p.includes(i.Name)) {
                                     thisMult *= parseFloat(i[mult]);
                                 }
                             }
@@ -216,14 +216,14 @@
 
                 function calculatePower(items) {
                     let thisPower = 0;
-                    for (const i of items){
+                    for (const i of items) {
                         thisPower += parseFloat(i["Power"])
                     }
                     return thisPower;
                 }
                 function calculateAir(items) {
                     let thisAir = 0;
-                    for (const i of items){
+                    for (const i of items) {
                         thisAir += parseFloat(i["Air"])
                     }
                     return thisAir;
