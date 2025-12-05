@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>节奏图形音乐游戏 Demo</title>
+    <title>图形节奏音乐游戏 – 多难度&金色音符</title>
     <style>
         * {
             box-sizing: border-box;
@@ -12,8 +12,6 @@
         }
 
         body {
-            background: radial-gradient(circle at top, #1b1f3a, #050710);
-            color: #f5f5f5;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             display: flex;
             flex-direction: column;
@@ -22,6 +20,8 @@
             min-height: 100vh;
             padding: 16px;
             overflow: hidden;
+            background: radial-gradient(circle at top, #1b1f3a, #050710);
+            color: #f5f5f5;
         }
 
         h1 {
@@ -33,7 +33,7 @@
 
         .panel {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             align-items: center;
             margin-bottom: 8px;
             flex-wrap: wrap;
@@ -47,29 +47,38 @@
 
         input[type="file"] {
             font-size: 13px;
-            max-width: 260px;
+            max-width: 240px;
         }
 
-        button {
+        button,
+        select {
             border: none;
-            padding: 8px 16px;
+            padding: 8px 14px;
             border-radius: 999px;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             background: linear-gradient(135deg, #4f46e5, #ec4899);
             color: white;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-            transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease, background 0.2s ease;
+            outline: none;
         }
 
-        button:disabled {
+        select {
+            padding-right: 24px;
+            background: linear-gradient(135deg, #0f172a, #4f46e5);
+        }
+
+        button:disabled,
+        select:disabled {
             opacity: 0.4;
             cursor: default;
             box-shadow: none;
             filter: grayscale(0.3);
         }
 
-        button:not(:disabled):hover {
+        button:not(:disabled):hover,
+        select:not(:disabled):hover {
             transform: translateY(-1px) scale(1.02);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
             filter: brightness(1.05);
@@ -138,6 +147,13 @@
             margin-bottom: 6px;
         }
 
+        #offsetStats {
+            font-size: 12px;
+            opacity: 0.75;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
         .game-wrapper {
             position: relative;
             display: inline-block;
@@ -160,30 +176,43 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            text-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
+            text-shadow: 0 0 16px rgba(0, 0, 0, 0.9);
         }
 
+        /* 中心无边框，只保留炫光文字 */
         .center-score {
-            font-size: 20px;
-            margin-bottom: 4px;
-            letter-spacing: 1px;
+            font-size: 26px;
+            margin-bottom: 6px;
+            letter-spacing: 2px;
+            z-index: 1;
+            color: #e5e7eb;
+            text-shadow:
+                0 0 18px rgba(59, 130, 246, 0.8),
+                0 0 30px rgba(236, 72, 153, 0.6);
         }
 
         .center-combo {
-            font-size: 16px;
-            margin-bottom: 4px;
-            opacity: 0.9;
+            font-size: 18px;
+            margin-bottom: 6px;
+            opacity: 0.95;
+            z-index: 1;
+            color: #f9fafb;
+            text-shadow:
+                0 0 15px rgba(56, 189, 248, 0.8),
+                0 0 26px rgba(37, 99, 235, 0.7);
         }
 
         .center-judge {
             min-height: 28px;
-            font-size: 22px;
-            font-weight: bold;
-            letter-spacing: 4px;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 6px;
             text-transform: uppercase;
+            z-index: 1;
+            transition: transform 0.1s ease;
         }
 
-        /* 全屏模式下的游戏容器 */
+        /* 全屏模式 */
         .fullscreen-play {
             position: fixed !important;
             inset: 0 !important;
@@ -198,7 +227,6 @@
             justify-content: center;
         }
 
-        /* 全屏时 canvas 改为自动适配居中缩放 */
         .fullscreen-play canvas {
             width: 100vw !important;
             height: 100vh !important;
@@ -216,11 +244,20 @@
             <input type="file" id="fileInput" accept="audio/mpeg,audio/mp3" />
         </label>
         <button id="startBtn" disabled>开始游戏</button>
+        <select id="difficultySelect">
+            <option value="easy">简单</option>
+            <option value="normal" selected>普通</option>
+            <option value="hard">困难</option>
+            <option value="master">大师</option>
+        </select>
+        <button id="useExampleBtn">示例歌曲</button>
+        <button id="exportChartBtn" disabled>导出谱面</button>
+        <button id="exportScoreBtn" disabled>导出成绩图</button>
     </div>
 
     <div class="info" id="infoText">
         请选择一首 mp3，程序会用频域分析 + pattern 自动生成节奏谱面。<br />
-        游戏中：图形对齐轮廓 + 判定环收缩到目标时按下 <b>空格</b>。
+        游戏中：图形对齐轮廓 + 判定环收缩到目标时按下 <b>空格</b> 或点击 / 触摸。
     </div>
 
     <div class="stats">
@@ -254,9 +291,12 @@
     </div>
 
     <div class="hint">
-        分数以 100.0000% 为基准，每个 note 平分：GOOD = PERFECT 的 2/3，BAD = 1/3，MISS = 0。<br />
+        分数以 100.0000% 为基准，每个 note 按权重平分：<br />
+        PERFECT = 1.0，GOOD = 0.7，BAD = 0.4，MISS = 0；金色音符权重 ×3。<br />
         额外根据最大连击加最多 +2% 加成，可突破 100% 拿到 SSS+。
     </div>
+
+    <div class="info" id="offsetStats"></div>
 
     <div id="gameContainer" class="game-wrapper">
         <canvas id="gameCanvas" width="900" height="540"></canvas>
@@ -270,35 +310,15 @@
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        // Pointer 事件：PC 点击 + 大部分移动端触摸 都能走这里
-        canvas.addEventListener("pointerdown", (e) => {
-            e.preventDefault();
-
-            // iOS 上有时需要 resume 一下 audioCtx
-            if (gameState.audioCtx && gameState.audioCtx.state === "suspended") {
-                gameState.audioCtx.resume();
-            }
-
-            handleTapScreen(e.clientX, e.clientY);
-        });
-
-        // 兼容旧设备 / 部分浏览器的 touch 事件
-        canvas.addEventListener("touchstart", (e) => {
-            // 阻止滚动 / 双指缩放之类
-            e.preventDefault();
-
-            if (gameState.audioCtx && gameState.audioCtx.state === "suspended") {
-                gameState.audioCtx.resume();
-            }
-
-            const touch = e.changedTouches[0];
-            if (!touch) return;
-            handleTapScreen(touch.clientX, touch.clientY);
-        }, { passive: false });
 
         const fileInput = document.getElementById("fileInput");
         const startBtn = document.getElementById("startBtn");
         const infoText = document.getElementById("infoText");
+        const difficultySelect = document.getElementById("difficultySelect");
+        const useExampleBtn = document.getElementById("useExampleBtn");
+        const exportChartBtn = document.getElementById("exportChartBtn");
+        const exportScoreBtn = document.getElementById("exportScoreBtn");
+        const offsetStatsEl = document.getElementById("offsetStats");
 
         const scorePercentEl = document.getElementById("scorePercent");
         const scoreGradeEl = document.getElementById("scoreGrade");
@@ -315,9 +335,9 @@
         const centreComboEl = document.getElementById("centerCombo");
         const judgementTextEl = document.getElementById("judgementText");
 
-        // 轮廓显示控制：从飞入开始一直到命中后 0.25s
         const OUTLINE_SHOW_BEFORE = 0.5;
         const OUTLINE_HIDE_AFTER = 0.25;
+        const EXAMPLE_MP3_URL = "example.mp3"; // 请把 example.mp3 放在同目录
 
         const gameState = {
             audioCtx: null,
@@ -325,11 +345,11 @@
             source: null,
             isPlaying: false,
             startTime: 0,
-            approachTime: 1.2,
+            approachTime: 1.4,
             notes: [],
-            // 评分相关
             totalNotes: 0,
-            scoreValue: 0,        // 所有 note 的加权和 (P=1, G=2/3, B=1/3, M=0)
+            totalWeight: 1,
+            scoreValue: 0,
             combo: 0,
             maxCombo: 0,
             perfectCount: 0,
@@ -338,27 +358,54 @@
             missCount: 0,
             currentScorePercent: 0,
             currentGrade: "D",
-            currentGradeLevel: 0, // 用来控制火花大小/命中音大小
+            currentGradeLevel: 0,
             lastJudgement: "",
             lastJudgementTime: 0,
             hitEffects: [],
-            bgCircles: []
+            bgCircles: [],
+            lastBeats: [],
+            lastBeatPeriod: 0.5,
+            hitOffsets: []
         };
 
-        // 进入全屏
-        function enterFullscreen() {
-            const elem = document.documentElement; // 也可以换成 canvas.parentNode
+        exportChartBtn.disabled = true;
+        exportScoreBtn.disabled = true;
 
+        function getDifficulty() {
+            return difficultySelect ? difficultySelect.value : "normal";
+        }
+
+        // Pointer / Touch
+        canvas.addEventListener("pointerdown", (e) => {
+            e.preventDefault();
+            if (gameState.audioCtx && gameState.audioCtx.state === "suspended") {
+                gameState.audioCtx.resume();
+            }
+            handleTapScreen(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            if (gameState.audioCtx && gameState.audioCtx.state === "suspended") {
+                gameState.audioCtx.resume();
+            }
+            const touch = e.changedTouches[0];
+            if (!touch) return;
+            handleTapScreen(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        // 全屏
+        function enterFullscreen() {
+            const elem = document.documentElement;
             if (elem.requestFullscreen) {
                 return elem.requestFullscreen().catch(() => { });
-            } else if (elem.webkitRequestFullscreen) { // Safari
+            } else if (elem.webkitRequestFullscreen) {
                 return elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) { // 旧 Edge
+            } else if (elem.msRequestFullscreen) {
                 return elem.msRequestFullscreen();
             }
         }
 
-        // 退出全屏
         function exitFullscreen() {
             const doc = document;
             if (
@@ -398,11 +445,39 @@
         }
         initBackground();
 
-        // ---------- 音频加载 ----------
+        // 难度设置：更明显的飞行速度差别
+        function applyDifficultySettings() {
+            const diff = getDifficulty();
+            if (diff === "easy") {
+                gameState.approachTime = 2.0;    // 很慢
+            } else if (diff === "normal") {
+                gameState.approachTime = 1.4;
+            } else if (diff === "hard") {
+                gameState.approachTime = 0.9;
+            } else if (diff === "master") {
+                gameState.approachTime = 0.7;    // 非常快
+            }
+        }
+
+        if (difficultySelect) {
+            difficultySelect.addEventListener("change", () => {
+                applyDifficultySettings();
+                if (gameState.lastBeats && gameState.lastBeats.length) {
+                    prepareNotes(gameState.lastBeats, gameState.lastBeatPeriod || 0.5);
+                    gameState.totalNotes = gameState.notes.length;
+                    noteCountEl.textContent = gameState.totalNotes;
+                    resetScoreState();
+                }
+            });
+        }
+
+        // 音频加载：文件
         fileInput.addEventListener("change", async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             startBtn.disabled = true;
+            exportChartBtn.disabled = true;
+            exportScoreBtn.disabled = true;
             judgementTextEl.textContent = "";
             infoText.textContent = "正在解码音频并进行频域分析，请稍等几秒...";
 
@@ -416,19 +491,24 @@
                 gameState.buffer = await audioCtx.decodeAudioData(arrayBuffer);
 
                 infoText.textContent = "基于多频段谱通量 + BPM + pattern 生成谱面中...";
-                const beats = generateBeatTimes(buffer = gameState.buffer);
+                const { beats, beatPeriod } = generateBeatTimes(gameState.buffer);
+
+                gameState.lastBeats = beats;
+                gameState.lastBeatPeriod = beatPeriod || 0.5;
 
                 if (beats.length === 0) {
                     infoText.textContent = "节拍检测结果为空，可能是比较平的背景音。你仍可点“开始游戏”体验一下。";
                 } else {
-                    infoText.textContent = `已生成节奏谱面，约 ${beats.length} 个音符。跟着节奏基本能全连。`;
+                    infoText.textContent = `已生成节奏谱面，原始约 ${beats.length} 个音符（不同难度会调整数量和密度）。`;
                 }
 
-                prepareNotes(beats);
+                applyDifficultySettings();
+                prepareNotes(beats, beatPeriod);
                 gameState.totalNotes = gameState.notes.length;
                 noteCountEl.textContent = gameState.totalNotes;
                 startBtn.disabled = false;
-
+                exportChartBtn.disabled = false;
+                exportScoreBtn.disabled = true;
                 resetScoreState();
             } catch (err) {
                 console.error(err);
@@ -436,7 +516,50 @@
             }
         });
 
-        // ---------- 频域节拍检测 + pattern ----------
+        // 音频加载：示例
+        useExampleBtn.addEventListener("click", async () => {
+            try {
+                startBtn.disabled = true;
+                exportChartBtn.disabled = true;
+                exportScoreBtn.disabled = true;
+                infoText.textContent = "正在加载示例 mp3...";
+
+                if (!gameState.audioCtx) {
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    gameState.audioCtx = new AC();
+                }
+                const res = await fetch(EXAMPLE_MP3_URL);
+                const arrayBuffer = await res.arrayBuffer();
+                const buffer = await gameState.audioCtx.decodeAudioData(arrayBuffer);
+                gameState.buffer = buffer;
+
+                infoText.textContent = "基于示例歌曲生成谱面中...";
+                const { beats, beatPeriod } = generateBeatTimes(buffer);
+
+                gameState.lastBeats = beats;
+                gameState.lastBeatPeriod = beatPeriod || 0.5;
+
+                if (beats.length === 0) {
+                    infoText.textContent = "节拍检测结果为空，可能是比较平的背景音。你仍可点“开始游戏”体验一下。";
+                } else {
+                    infoText.textContent = `已生成示例谱面，原始约 ${beats.length} 个音符。`;
+                }
+
+                applyDifficultySettings();
+                prepareNotes(beats, beatPeriod);
+                gameState.totalNotes = gameState.notes.length;
+                noteCountEl.textContent = gameState.totalNotes;
+                startBtn.disabled = false;
+                exportChartBtn.disabled = false;
+                exportScoreBtn.disabled = true;
+                resetScoreState();
+            } catch (err) {
+                console.error(err);
+                infoText.textContent = "示例音频加载失败，请确认 example.mp3 是否放在同目录下。";
+            }
+        });
+
+        // 频域节拍检测
         function generateBeatTimes(buffer) {
             const channelData = buffer.getChannelData(0);
             const sampleRate = buffer.sampleRate;
@@ -451,13 +574,13 @@
             const bandWeights = [2.0, 2.0, 1.6, 1.3, 1.0, 0.8, 0.6, 0.4];
 
             const numFrames = Math.floor((maxSamples - frameSize) / hopSize);
-            if (numFrames <= 0) return [];
+            if (numFrames <= 0) return { beats: [], beatPeriod: 0.5 };
 
             const flux = new Array(numFrames).fill(0);
             let prevMagnitudes = new Array(bandFreqs.length).fill(0);
 
-            function goertzel(frame, offset, N, freq, sampleRate) {
-                const k = Math.round(0.5 + ((N * freq) / sampleRate));
+            function goertzel(frame, offset, N, freq, sr) {
+                const k = Math.round(0.5 + ((N * freq) / sr));
                 const omega = (2 * Math.PI * k) / N;
                 const cos = Math.cos(omega);
                 const sin = Math.sin(omega);
@@ -473,7 +596,6 @@
                 return Math.sqrt(real * real + imag * imag);
             }
 
-            // 1. 计算多频段谱通量
             for (let f = 0; f < numFrames; f++) {
                 const offset = f * hopSize;
                 const mags = [];
@@ -490,7 +612,6 @@
                 prevMagnitudes = mags;
             }
 
-            // 2. 平滑 + 归一化
             const smoothed = [];
             const smoothSize = 4;
             let maxFlux = 0;
@@ -507,15 +628,13 @@
                 smoothed.push(v);
                 if (v > maxFlux) maxFlux = v;
             }
-            if (maxFlux <= 0) return [];
+            if (maxFlux <= 0) return { beats: [], beatPeriod: 0.5 };
             for (let i = 0; i < smoothed.length; i++) {
                 smoothed[i] /= maxFlux;
             }
 
-            const meanFlux = smoothed.reduce((a, b) => a + b, 0) / smoothed.length;
             const framesPerSecond = sampleRate / hopSize;
 
-            // 3. 估 BPM
             const minTempo = 60;
             const maxTempo = 200;
             const minLag = Math.round(framesPerSecond * 60 / maxTempo);
@@ -533,12 +652,11 @@
                     bestLag = lag;
                 }
             }
-            if (!bestLag) return [];
+            if (!bestLag) return { beats: [], beatPeriod: 0.5 };
 
-            let beatPeriod = bestLag / framesPerSecond; // 秒/拍
+            let beatPeriod = bestLag / framesPerSecond;
             beatPeriod = Math.min(Math.max(beatPeriod, 0.25), 1.0);
 
-            // 4. 相位
             const beatWindow = beatPeriod * 0.25;
             const phaseStep = beatPeriod / 32;
             let bestPhase = 0;
@@ -563,7 +681,6 @@
                 }
             }
 
-            // 5. 小节 + pattern
             const duration = Math.min(buffer.duration, maxSecondsForAnalysis);
             const measureDuration = beatPeriod * 4;
             let firstMeasureStart = bestPhase;
@@ -577,26 +694,26 @@
 
             const patterns = {
                 low: [
-                    [1, 0, 0, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 0, 1, 0, 0, 0],
                     [1, 0, 0, 0, 0, 0, 1, 0],
+                    [1, 0, 0, 1, 0, 0, 1, 0],
+                    [1, 0, 1, 0, 0, 0, 1, 0],
                 ],
                 mid: [
-                    [1, 0, 0, 0, 1, 0, 0, 0],
                     [1, 0, 0, 0, 1, 0, 1, 0],
-                    [1, 0, 1, 0, 1, 0, 0, 0],
-                    [1, 0, 0, 0, 1, 0, 0, 1],
+                    [1, 0, 1, 0, 1, 0, 0, 1],
+                    [1, 0, 1, 0, 1, 0, 1, 0],
+                    [1, 0, 1, 1, 0, 0, 1, 0],
                 ],
                 high: [
-                    [1, 0, 1, 0, 1, 0, 1, 0],
                     [1, 1, 0, 1, 1, 0, 1, 0],
+                    [1, 1, 0, 1, 1, 1, 1, 0],
                     [1, 0, 1, 1, 1, 0, 1, 1],
-                    [1, 0, 1, 0, 1, 1, 0, 1],
+                    [1, 1, 1, 0, 1, 1, 0, 1],
                 ]
             };
 
             const beats = [];
-            const maxNotes = 99999; // 可以改大/改小控制整局音符量
+            const maxNotes = 99999;
 
             function snapToLocalPeak(timeSeconds) {
                 const searchRadius = beatPeriod * 0.2;
@@ -643,7 +760,7 @@
                 for (let s = 0; s < pattern.length; s++) {
                     if (!pattern[s]) continue;
 
-                    const slotOffset = (beatPeriod / 2) * s; // 8分音
+                    const slotOffset = (beatPeriod / 2) * s;
                     let t = measureStart + slotOffset;
                     if (t < 0 || t > duration) continue;
 
@@ -659,8 +776,7 @@
                     }
                     const localAvg = localCount ? localSum / localCount : 0;
 
-                    // 弱句的格子，有一定概率不出 note
-                    if (localAvg < meanFlux * 0.9 && Math.random() < 0.4) {
+                    if (localAvg < 0.4 && Math.random() < 0.15) {
                         continue;
                     }
 
@@ -678,89 +794,304 @@
                     fallbackBeats.push(t);
                     if (fallbackBeats.length >= maxNotes) break;
                 }
-                return fallbackBeats;
+                return { beats: fallbackBeats, beatPeriod };
             }
 
             beats.sort((a, b) => a - b);
             const merged = [];
-            const minGap = 0.04;
+            const minGap = 0.02;
             for (let i = 0; i < beats.length; i++) {
                 if (i === 0 || beats[i] - merged[merged.length - 1] > minGap) {
                     merged.push(beats[i]);
                 }
             }
-            return merged;
+            return { beats: merged, beatPeriod };
         }
 
-        function prepareNotes(beats) {
+        // 构造更密集的节拍：插入中点，重复多轮用于 Hard/Master
+        function buildDenseBeats(baseBeats, beatPeriod, level) {
+            let current = baseBeats.slice();
+            for (let iter = 0; iter < level; iter++) {
+                const extra = [];
+                for (let i = 0; i < current.length - 1; i++) {
+                    const t1 = current[i];
+                    const t2 = current[i + 1];
+                    const gap = t2 - t1;
+                    if (gap > beatPeriod * 0.35 && gap < beatPeriod * 2.4) {
+                        extra.push(t1 + gap * 0.5);
+                    }
+                }
+                current = current.concat(extra);
+                current.sort((a, b) => a - b);
+
+                // 稍微去重
+                const merged = [];
+                const minGap = beatPeriod * 0.14;
+                for (let i = 0; i < current.length; i++) {
+                    if (i === 0 || current[i] - merged[merged.length - 1] > minGap) {
+                        merged.push(current[i]);
+                    }
+                }
+                current = merged;
+            }
+            return current;
+        }
+
+        // 根据难度选出真正用来生成 note 的时间点
+        function selectBeatsForDifficulty(baseBeats, beatPeriod) {
+            const diff = getDifficulty();
+            if (!baseBeats.length) return [];
+
+            const normalBeats = baseBeats.slice();
+            const normalCount = normalBeats.length;
+
+            const ratioMap = {
+                easy: 0.5,
+                normal: 1.0,
+                hard: 1.5,
+                master: 2.0
+            };
+            const targetRatio = ratioMap[diff] || 1.0;
+            let targetCount = Math.max(1, Math.round(normalCount * targetRatio));
+
+            let source = normalBeats;
+
+            if (diff === "easy") {
+                // Easy：源节拍本身，最后再强制“相邻间隔 >= 1.2 beatPeriod”
+                source = normalBeats;
+            } else if (diff === "normal") {
+                // Normal：仍用原节拍，只在太密时去掉部分
+                source = normalBeats;
+            } else if (diff === "hard") {
+                // Hard：一轮加密
+                source = buildDenseBeats(normalBeats, beatPeriod, 1);
+            } else if (diff === "master") {
+                // Master：再加密一轮，形成 8/16 分节奏感
+                source = buildDenseBeats(normalBeats, beatPeriod, 2);
+            }
+
+            if (source.length <= targetCount) {
+                targetCount = source.length;
+                // 特殊处理 easy，让 pattern 更稀疏&规则
+                if (diff === "easy") {
+                    const result = [];
+                    let lastT = -Infinity;
+                    const minGapEasy = beatPeriod * 1.2;
+                    for (let i = 0; i < source.length; i++) {
+                        const t = source[i];
+                        if (t - lastT >= minGapEasy) {
+                            result.push(t);
+                            lastT = t;
+                        }
+                    }
+                    return result;
+                }
+                return source;
+            }
+
+            // 统一用“均匀采样”从 source 取 targetCount 个点
+            const resultTemp = [];
+            const step = source.length / targetCount;
+            for (let i = 0; i < targetCount; i++) {
+                const idx = Math.floor(i * step);
+                if (idx >= 0 && idx < source.length) resultTemp.push(source[idx]);
+            }
+
+            // 针对 Easy 再做一次“至少间隔 1.2 beatPeriod”的修正，进一步拉大难度差距
+            if (diff === "easy") {
+                const result = [];
+                let lastT = -Infinity;
+                const minGapEasy = beatPeriod * 1.2;
+                for (let i = 0; i < resultTemp.length; i++) {
+                    const t = resultTemp[i];
+                    if (t - lastT >= minGapEasy) {
+                        result.push(t);
+                        lastT = t;
+                    }
+                }
+                return result;
+            }
+
+            // Normal：略微过滤特别密集的
+            if (diff === "normal") {
+                const result = [];
+                let lastT = -Infinity;
+                const minGapNormal = beatPeriod * 0.45;
+                for (let i = 0; i < resultTemp.length; i++) {
+                    const t = resultTemp[i];
+                    if (t - lastT >= minGapNormal) {
+                        result.push(t);
+                        lastT = t;
+                    }
+                }
+                return result;
+            }
+
+            // Hard / Master：保留密集感，只略微压掉极端重复
+            const result = [];
+            let lastT = -Infinity;
+            const minGapDense = beatPeriod * 0.18;
+            for (let i = 0; i < resultTemp.length; i++) {
+                const t = resultTemp[i];
+                if (t - lastT >= minGapDense) {
+                    result.push(t);
+                    lastT = t;
+                }
+            }
+            return result;
+        }
+
+        // 生成相对平滑的判定区位置
+        function chooseNotePosition(lastPos, margin) {
+            const width = canvas.width;
+            const height = canvas.height;
+            const left = margin;
+            const right = width - margin;
+            const top = margin;
+            const bottom = height - margin;
+
+            if (!lastPos) {
+                return {
+                    x: left + Math.random() * (right - left),
+                    y: top + Math.random() * (bottom - top),
+                };
+            }
+
+            const diff = getDifficulty();
+            // 难度越高，平均位移略大一点
+            let minStep = 140;
+            let maxStep = 260;
+            if (diff === "easy") {
+                minStep = 120;
+                maxStep = 220;
+            } else if (diff === "hard") {
+                minStep = 160;
+                maxStep = 280;
+            } else if (diff === "master") {
+                minStep = 170;
+                maxStep = 320;
+            }
+
+            const angle = Math.random() * Math.PI * 2;
+            const step = minStep + Math.random() * (maxStep - minStep);
+            let x = lastPos.x + Math.cos(angle) * step;
+            let y = lastPos.y + Math.sin(angle) * step;
+
+            x = Math.min(right, Math.max(left, x));
+            y = Math.min(bottom, Math.max(top, y));
+            return { x, y };
+        }
+
+        // 谱面生成（无 hold）
+        function prepareNotes(beats, beatPeriod) {
+            const selectedBeats = selectBeatsForDifficulty(beats, beatPeriod);
             gameState.notes = [];
-            const margin = 90;
+
+            const margin = 110;
             const baseRadius = 40;
             const approach = gameState.approachTime;
 
-            for (const t of beats) {
+            let lastPos = null;
+            let prevNote = null;
+
+            for (let i = 0; i < selectedBeats.length; i++) {
+                const t = selectedBeats[i];
                 const spawnTime = t - approach;
-                const x = margin + Math.random() * (canvas.width - margin * 2);
-                const y = margin + Math.random() * (canvas.height - margin * 2);
+                const pos = chooseNotePosition(lastPos, margin);
+                lastPos = pos;
+
                 const angle = Math.random() * Math.PI * 2;
                 const distance = Math.max(canvas.width, canvas.height) * 0.7;
-                const spawnX = x + Math.cos(angle) * distance;
-                const spawnY = y + Math.sin(angle) * distance;
+                const spawnX = pos.x + Math.cos(angle) * distance;
+                const spawnY = pos.y + Math.sin(angle) * distance;
                 const radius = baseRadius * (0.9 + Math.random() * 0.3);
 
-                gameState.notes.push({
+                const note = {
                     targetTime: t,
                     spawnTime: spawnTime < 0 ? 0 : spawnTime,
-                    x, y, radius,
-                    spawnX, spawnY,
+                    x: pos.x,
+                    y: pos.y,
+                    radius,
+                    spawnX,
+                    spawnY,
                     hit: false,
                     missed: false,
                     rotation: Math.random() * Math.PI * 2,
                     rotationSpeed: (Math.random() * 2 - 1) * 1.5,
                     trail: [],
-                    prevOutline: null   // 先占位
-                });
+                    prevOutline: prevNote,
+                    isGold: false,
+                    weight: 1
+                };
+
+                gameState.notes.push(note);
+                prevNote = note;
             }
 
-            // 按时间顺序为每个 note 记录“上一个轮廓”
-            // 默认 beats 已经按时间排序了；防御起见再 sort 一次
-            gameState.notes.sort((a, b) => a.targetTime - b.targetTime);
-            for (let i = 0; i < gameState.notes.length; i++) {
-                if (i === 0) {
-                    gameState.notes[i].prevOutline = null;
-                } else {
-                    gameState.notes[i].prevOutline = gameState.notes[i - 1];
+            // 金色音符：根据难度比例
+            const n = gameState.notes.length;
+            if (n > 0) {
+                const diff = getDifficulty();
+                const goldRatio =
+                    diff === "easy" ? 0.06 :
+                        diff === "normal" ? 0.09 :
+                            diff === "hard" ? 0.13 :
+                                0.18; // master
+                const goldTarget = Math.max(1, Math.round(n * goldRatio));
+
+                const indices = [...Array(n).keys()];
+                for (let i = indices.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [indices[i], indices[j]] = [indices[j], indices[i]];
+                }
+                for (let i = 0; i < goldTarget && i < indices.length; i++) {
+                    const idx = indices[i];
+                    gameState.notes[idx].isGold = true;
+                    gameState.notes[idx].weight = 3;
                 }
             }
+
+            gameState.notes.sort((a, b) => a.targetTime - b.targetTime);
+
+            // 计算总权重
+            let totalWeight = 0;
+            for (const nNote of gameState.notes) {
+                totalWeight += nNote.weight || 1;
+            }
+            gameState.totalWeight = totalWeight || 1;
         }
 
-
-        // ---------- 游戏控制 ----------
+        // 游戏控制
         startBtn.addEventListener("click", async () => {
             if (!gameState.buffer || !gameState.audioCtx) return;
-
-            // 显示纯游戏画面
             enterGameplayScreen();
             await enterFullscreen();
-
             startGame();
         });
+
         function enterGameplayScreen() {
             document.body.style.overflow = "hidden";
-
-            // 隐藏上方 UI
             document.querySelector("h1").style.display = "none";
             document.querySelector(".panel").style.display = "none";
             document.querySelector(".info").style.display = "none";
             document.querySelector(".stats").style.display = "none";
             document.querySelector(".judge-stats").style.display = "none";
             document.querySelector(".hint").style.display = "none";
-
-            // Canvas 全屏化
+            offsetStatsEl.style.display = "none";
             document.getElementById("gameContainer").classList.add("fullscreen-play");
         }
 
-
+        function exitGameplayScreen() {
+            document.body.style.overflow = "auto";
+            document.querySelector("h1").style.display = "";
+            document.querySelector(".panel").style.display = "";
+            document.querySelector(".info").style.display = "";
+            document.querySelector(".stats").style.display = "";
+            document.querySelector(".judge-stats").style.display = "";
+            document.querySelector(".hint").style.display = "";
+            offsetStatsEl.style.display = "";
+            document.getElementById("gameContainer").classList.remove("fullscreen-play");
+        }
 
         function startGame() {
             const audioCtx = gameState.audioCtx;
@@ -797,25 +1128,75 @@
             gameState.currentGrade = "D";
             gameState.currentGradeLevel = 0;
             gameState.lastJudgement = "";
+            gameState.hitEffects = [];
+            gameState.hitOffsets = [];
             judgementTextEl.textContent = "";
+            judgementTextEl.style.transform = "scale(1)";
+            if (offsetStatsEl) offsetStatsEl.textContent = "";
 
             updateScoreAndUI();
         }
 
-        // ---------- 判定 ----------
+        // 判定（键盘）
         window.addEventListener("keydown", (e) => {
             if (e.code === "Space") {
                 e.preventDefault();
                 handleHit();
             }
         });
-        // 点击 / 触摸击打音符（移动端 / PC 点按）
+
+        // 不同难度判定线
+        function judgeHit(absTimeDiff, distRatio) {
+            const diff = getDifficulty();
+
+            // Normal 基准
+            let tPerfect = 0.08;
+            let tGood = 0.16;
+            let tBad = 0.26;
+
+            let dPerfect = 0.45;
+            let dGood = 0.85;
+            let dBad = 1.20;
+
+            if (diff === "easy") {
+                const tf = 1.5;
+                const df = 1.3;
+                tPerfect *= tf;
+                tGood *= tf;
+                tBad *= tf;
+                dPerfect *= df;
+                dGood *= df;
+                dBad *= df;
+            } else if (diff === "hard") {
+                const tf = 0.75;
+                const df = 0.8;
+                tPerfect *= tf;
+                tGood *= tf;
+                tBad *= tf;
+                dPerfect *= df;
+                dGood *= df;
+                dBad *= df;
+            } else if (diff === "master") {
+                const tf = 0.6;
+                const df = 0.75;
+                tPerfect *= tf;
+                tGood *= tf;
+                tBad *= tf;
+                dPerfect *= df;
+                dGood *= df;
+                dBad *= df;
+            }
+
+            if (absTimeDiff <= tPerfect && distRatio <= dPerfect) return "PERFECT";
+            if (absTimeDiff <= tGood && distRatio <= dGood) return "GOOD";
+            if (absTimeDiff <= tBad && distRatio <= dBad) return "BAD";
+            return "MISS";
+        }
+
         function handleTapScreen(clientX, clientY) {
             if (!gameState.isPlaying || !gameState.audioCtx) return;
-
             const now = gameState.audioCtx.currentTime - gameState.startTime;
 
-            // 把屏幕坐标换成 canvas 内坐标（考虑 CSS 缩放）
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -823,60 +1204,38 @@
             const y = (clientY - rect.top) * scaleY;
 
             let bestNote = null;
-            let bestTimeDiff = Infinity;
-            let bestDistRatio = Infinity;
+            let bestScore = Infinity;
+            let bestTimeDiff = 0;
+            let bestDistRatio = 0;
 
             for (const note of gameState.notes) {
                 if (note.hit || note.missed) continue;
 
-                const dt = Math.abs(note.targetTime - now);
-                // 时间离得太远就不考虑了
-                if (dt > 0.32) continue;
+                const dt = now - note.targetTime;
+                const adt = Math.abs(dt);
+                if (adt > 0.32) continue;
 
                 const pos = getNotePosition(note, now);
                 const dist = Math.hypot(pos.x - x, pos.y - y);
                 const distRatio = dist / note.radius;
+                if (distRatio > 1.8) continue;
 
-                // 点击距离太远的也不要
-                if (distRatio > 11.8) continue;
-
-                // 综合时间 + 距离，选一个“最合理的 note”
-                const score = dt * 1.0 + distRatio * 0.06;
-                if (score < bestTimeDiff) {
-                    bestTimeDiff = dt;
+                const score = adt * 1.0 + distRatio * 0.06;
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestNote = note;
                     bestTimeDiff = dt;
                     bestDistRatio = distRatio;
-                    bestNote = note;
                 }
             }
 
-            // 没找到合适 note，就算一次 MISS 空挥
             if (!bestNote) {
-                applyJudgement(null, "MISS");
+                applyJudgement(null, "MISS", 0);
                 return;
             }
 
-            // 下面这块判定逻辑请用你当前 handleHit 里那段：
-            // （如果你已经按“更松判定”改过，就把那一段原样搬过来）
-            let result = "MISS";
-
-            // 示例：比较宽松版
-            const tPerfect = 0.11;
-            const tGood = 0.18;
-            const tBad = 0.26;
-            const dPerfect = 0.60;
-            const dGood = 1.00;
-            const dBad = 1.50;
-
-            if (bestTimeDiff <= tPerfect && bestDistRatio <= dPerfect) {
-                result = "PERFECT";
-            } else if (bestTimeDiff <= tGood && bestDistRatio <= dGood) {
-                result = "GOOD";
-            } else if (bestTimeDiff <= tBad && bestDistRatio <= dBad) {
-                result = "BAD";
-            } else {
-                result = "MISS";
-            }
+            const offset = bestTimeDiff;
+            const result = judgeHit(Math.abs(offset), bestDistRatio);
 
             if (result === "MISS") {
                 bestNote.missed = true;
@@ -884,7 +1243,7 @@
                 bestNote.hit = true;
             }
 
-            applyJudgement(bestNote, result);
+            applyJudgement(bestNote, result, offset);
         }
 
         function handleHit() {
@@ -892,20 +1251,21 @@
             const now = gameState.audioCtx.currentTime - gameState.startTime;
 
             let bestNote = null;
-            let bestTimeDiff = Infinity;
+            let bestDiff = Infinity;
 
             for (const note of gameState.notes) {
                 if (note.hit || note.missed) continue;
-                const dt = Math.abs(note.targetTime - now);
-                if (dt > 0.28) continue;
-                if (dt < bestTimeDiff) {
-                    bestTimeDiff = dt;
+                const diff = now - note.targetTime;
+                const ad = Math.abs(diff);
+                if (ad > 0.3) continue;
+                if (ad < bestDiff) {
+                    bestDiff = ad;
                     bestNote = note;
                 }
             }
 
             if (!bestNote) {
-                applyJudgement(null, "MISS"); // 空挥，算 MISS 不挂在音符上
+                applyJudgement(null, "MISS", 0);
                 return;
             }
 
@@ -913,56 +1273,29 @@
             const dist = Math.hypot(currentPos.x - bestNote.x, currentPos.y - bestNote.y);
             const distRatio = dist / bestNote.radius;
 
-            // ----- 更松的判定线（推荐版） -----
+            const offset = now - bestNote.targetTime;
+            const result = judgeHit(Math.abs(offset), distRatio);
 
-            // 时间轴（秒）
-            // 原版 Perfect ≈70ms，现在放宽到 ≈110ms
-            // GOOD 放宽到 ≈180ms
-            // BAD 放宽到 ≈260ms
-            const tPerfect = 0.11;
-            const tGood = 0.18;
-            const tBad = 0.26;
-
-            // 距离比例（图形中心距离 / 半径）
-            // 放宽范围，使图形未完全重合也能判定
-            const dPerfect = 991.10;   // 原来是 0.45
-            const dGood = 991.80;   // 原来是 0.75
-            const dBad = 992.60;   // 原来是 1.1
-
-            let result = "MISS";
-
-            if (bestTimeDiff <= tPerfect && distRatio <= dPerfect) {
-                result = "PERFECT";
-            } else if (bestTimeDiff <= tGood && distRatio <= dGood) {
-                result = "GOOD";
-            } else if (bestTimeDiff <= tBad && distRatio <= dBad) {
-                result = "BAD";
-            } else {
-                result = "MISS";
-            }
-
-
-            // 命中后图形/轮廓/引导线全部消失
             if (result === "MISS") {
                 bestNote.missed = true;
             } else {
                 bestNote.hit = true;
             }
 
-            applyJudgement(bestNote, result);
+            applyJudgement(bestNote, result, offset);
         }
 
-        function applyJudgement(note, result) {
-            // 评分权重
-            let weight = 0;
-            if (result === "PERFECT") weight = 1.0;
-            else if (result === "GOOD") weight = 2 / 3;
-            else if (result === "BAD") weight = 1 / 3;
-            else weight = 0;
+        function applyJudgement(note, result, offsetSeconds = 0) {
+            let ratio = 0;
+            if (result === "PERFECT") ratio = 1.0;
+            else if (result === "GOOD") ratio = 0.7;
+            else if (result === "BAD") ratio = 0.4;
+            else ratio = 0;
 
-            // 命中音符（非空挥）才计入 scoreValue；空 MISS 只影响 combo 和 MISS 统计
-            if (note) {
-                gameState.scoreValue += weight;
+            if (note && result !== "MISS") {
+                const w = note.weight || 1;
+                gameState.scoreValue += ratio * w;
+                gameState.hitOffsets.push(offsetSeconds);
             }
 
             if (result === "PERFECT") gameState.perfectCount++;
@@ -970,8 +1303,8 @@
             else if (result === "BAD") gameState.badCount++;
             else gameState.missCount++;
 
-            // Combo：PERFECT / GOOD 维持连击；BAD/MISS 断
-            if (result !== "MISS") {
+            // 只有 PERFECT/GOOD 维持连击；BAD/MISS 断
+            if (result === "PERFECT" || result === "GOOD") {
                 gameState.combo += 1;
                 if (gameState.combo > gameState.maxCombo) {
                     gameState.maxCombo = gameState.combo;
@@ -980,23 +1313,21 @@
                 gameState.combo = 0;
             }
 
-            registerJudgement(result);
+            registerJudgement(result, note && note.isGold);
             if (note) {
-                spawnHitEffect(note.x, note.y, result);
+                spawnHitEffect(note.x, note.y, result, note.isGold);
             }
-            playHitSound(result);
+            playHitSound(result, note && note.isGold);
 
             updateScoreAndUI();
         }
 
-        function registerJudgement(text) {
-            gameState.lastJudgement = text;
+        function registerJudgement(text, isGold = false) {
+            gameState.lastJudgement = isGold ? (text + "+") : text;
             gameState.lastJudgementTime = performance.now() / 1000;
         }
 
-        // 分数 & 评级计算
         function getGradeFromPercent(p) {
-            // p 是可能 > 100 的最终分（包含连击加成）
             if (p > 100) return { label: "SSS+", level: 9 };
             if (p >= 99.75) return { label: "SSS", level: 8 };
             if (p >= 99.5) return { label: "SS+", level: 7 };
@@ -1009,15 +1340,36 @@
             return { label: "D", level: 0 };
         }
 
-        function updateScoreAndUI() {
-            const total = gameState.totalNotes || 1;
-            const rawAccuracy = gameState.scoreValue / total; // 0~1
-            let basePercent = rawAccuracy * 100;
+        function updateOffsetStats() {
+            if (!offsetStatsEl) return;
+            const arr = gameState.hitOffsets;
+            if (!arr.length) {
+                offsetStatsEl.textContent = "";
+                return;
+            }
+            const sum = arr.reduce((a, b) => a + b, 0);
+            const avg = sum / arr.length;
+            const sumSq = arr.reduce((a, b) => a + (b - avg) * (b - avg), 0);
+            const std = Math.sqrt(sumSq / arr.length);
 
+            const avgMs = avg * 1000;
+            const stdMs = std * 1000;
+            const tendency =
+                avgMs > 1 ? "偏晚" : avgMs < -1 ? "偏早" : "基本居中";
+
+            offsetStatsEl.textContent =
+                `判定偏差：平均 ${avgMs.toFixed(1)} ms（${tendency}），` +
+                `离散度 ${stdMs.toFixed(1)} ms，共命中 ${arr.length} 个 note`;
+        }
+
+        function updateScoreAndUI() {
+            const totalW = gameState.totalWeight || 1;
+            const rawAccuracy = gameState.scoreValue / totalW;
+            let basePercent = rawAccuracy * 100;
             if (basePercent < 0) basePercent = 0;
 
-            // 连击加成：最大 +2%，maxCombo = totalNotes 时拿满
-            const comboBonus = (gameState.maxCombo / total) * 2; // 0~2
+            const total = gameState.totalNotes || 1;
+            const comboBonus = (gameState.maxCombo / total) * 2;
             let finalPercent = basePercent + comboBonus;
 
             gameState.currentScorePercent = finalPercent;
@@ -1037,31 +1389,24 @@
 
             centreScoreEl.textContent = finalPercent.toFixed(4) + "% [" + gradeInfo.label + "]";
             centreComboEl.textContent = "Combo " + gameState.combo;
+
+            updateOffsetStats();
         }
 
-        // 找到当前时刻下一个要击打的音符（用于高亮）
         function findNextTargetNote(nowAudio) {
             let bestNote = null;
             let bestScore = Infinity;
 
             for (const note of gameState.notes) {
                 if (note.hit || note.missed) continue;
-
-                // 距离判定时刻的时间差
                 const dt = note.targetTime - nowAudio;
-
-                // 已经过了很久的+还没到很远的都不考虑
                 if (dt < -0.25 || dt > 3) continue;
-
-                // 得分函数：越接近 targetTime 优先级越高，已经过时一点的也优先
                 const score = Math.abs(dt);
-
                 if (score < bestScore) {
                     bestScore = score;
                     bestNote = note;
                 }
             }
-
             return bestNote;
         }
 
@@ -1075,100 +1420,201 @@
             };
         }
 
-        // ---------- 命中音 ----------
-        function playHitSound(result) {
+        function playHitSound(result, isGold = false) {
             if (!gameState.audioCtx) return;
             const ctxAudio = gameState.audioCtx;
 
             const osc = ctxAudio.createOscillator();
+            const clickOsc = ctxAudio.createOscillator();
             const gain = ctxAudio.createGain();
+            const clickGain = ctxAudio.createGain();
 
-            let freq = 880;
-            let baseGain = 0.18;
-            let duration = 0.06;
+            let freq = 900;
+            let baseGain = 0.22;
+            let duration = 0.07;
 
             if (result === "PERFECT") {
-                freq = 1100;
-                baseGain = 0.15;
-                duration = 0.045;
-            } else if (result === "GOOD") {
-                freq = 900;
-                baseGain = 0.2;
+                freq = isGold ? 1350 : 1200;
+                baseGain = 0.26;
                 duration = 0.06;
-            } else if (result === "BAD") {
-                freq = 600;
+            } else if (result === "GOOD") {
+                freq = isGold ? 1100 : 1000;
                 baseGain = 0.25;
-                duration = 0.08;
-            } else { // MISS
-                freq = 400;
-                baseGain = 0.2;
-                duration = 0.05;
+                duration = 0.07;
+            } else if (result === "BAD") {
+                freq = 650;
+                baseGain = 0.28;
+                duration = 0.09;
+            } else {
+                freq = 420;
+                baseGain = 0.20;
+                duration = 0.06;
             }
 
-            // 评级越高，音量越小
             const gradeLevel = gameState.currentGradeLevel || 0;
-            const volumeFactor = Math.max(0.3, 1 - gradeLevel * 0.07); // 从 1 ~ 0.3
-            baseGain *= volumeFactor;
+            const volumeFactor = Math.max(0.35, 1 - gradeLevel * 0.06);
+            baseGain *= volumeFactor * (isGold ? 1.15 : 1.0);
 
             osc.frequency.value = freq;
-            osc.type = "sine";
+            osc.type = "square";
+
+            clickOsc.frequency.value = 2600;
+            clickOsc.type = "triangle";
 
             const now = ctxAudio.currentTime;
+
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(baseGain, now + 0.003);
+            gain.gain.linearRampToValueAtTime(baseGain, now + 0.005);
             gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
+            clickGain.gain.setValueAtTime(baseGain * 0.6, now);
+            clickGain.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.6);
+
             osc.connect(gain);
+            clickOsc.connect(clickGain);
             gain.connect(ctxAudio.destination);
+            clickGain.connect(ctxAudio.destination);
 
             osc.start(now);
+            clickOsc.start(now);
             osc.stop(now + duration + 0.02);
+            clickOsc.stop(now + duration + 0.05);
         }
 
-        // ---------- 特效 ----------
-        function spawnHitEffect(x, y, type) {
+        function spawnHitEffect(x, y, type, isGold = false) {
             const now = performance.now() / 1000;
 
-            let color;
-            if (type === "PERFECT") color = "rgba(255,255,255,1)";
-            else if (type === "GOOD") color = "rgba(180,255,220,1)";
-            else if (type === "BAD") color = "rgba(255,220,180,1)";
-            else color = "rgba(255,160,160,1)";
+            let baseColor = "255,255,255";
+            if (type === "GOOD") baseColor = "190, 242, 100";
+            else if (type === "BAD") baseColor = "251, 191, 36";
+            else if (type === "MISS") baseColor = "248, 113, 113";
 
-            // 评级越高，火花越大
+            if (isGold) {
+                baseColor = "252, 211, 77";
+            }
+
             const gradeScale = 1 + (gameState.currentGradeLevel || 0) * 0.08;
             let baseScale = 1;
             let duration = 0.35;
+            let rings = 2;
+            let particles = 14;
+
             if (type === "PERFECT") {
                 baseScale = 1.3;
-                duration = 0.4;
+                duration = 0.45;
+                rings = isGold ? 4 : 3;
+                particles = isGold ? 26 : 22;
             } else if (type === "GOOD") {
                 baseScale = 1.0;
                 duration = 0.35;
             } else if (type === "BAD") {
-                baseScale = 0.8;
-                duration = 0.3;
+                baseScale = 0.85;
+                duration = 0.30;
+                particles = 10;
             } else {
-                baseScale = 0.6;
+                baseScale = 0.7;
                 duration = 0.25;
+                particles = 8;
+            }
+
+            if (isGold) {
+                baseScale *= 1.15;
             }
 
             const scale = baseScale * gradeScale;
+
+            const particleList = [];
+            for (let i = 0; i < particles; i++) {
+                particleList.push({
+                    angle: (i / particles) * Math.PI * 2 + Math.random() * 0.3,
+                    speed: 80 + Math.random() * 120,
+                    radius: 4 + Math.random() * 4,
+                });
+            }
 
             gameState.hitEffects.push({
                 x,
                 y,
                 startTime: now,
                 duration,
-                color,
-                scale
+                color: baseColor,
+                scale,
+                rings,
+                particles: particleList,
+                isGold
             });
         }
 
-        // ---------- 渲染 ----------
+        function drawHitEffects(now) {
+            ctx.save();
+            for (let i = gameState.hitEffects.length - 1; i >= 0; i--) {
+                const e = gameState.hitEffects[i];
+                const t = (now - e.startTime) / e.duration;
+                if (t >= 1) {
+                    gameState.hitEffects.splice(i, 1);
+                    continue;
+                }
+
+                const alpha = 1 - t;
+
+                for (let rIndex = 0; rIndex < e.rings; rIndex++) {
+                    const ringT = t * (0.7 + rIndex * 0.2);
+                    const radius = (16 + ringT * 90) * e.scale;
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(${e.color}, ${alpha * (0.6 - rIndex * 0.15)})`;
+                    ctx.lineWidth = 3 * (1 - ringT);
+                    ctx.stroke();
+                }
+
+                for (const p of e.particles) {
+                    const dist = p.speed * t * e.scale;
+                    const px = e.x + Math.cos(p.angle) * dist;
+                    const py = e.y + Math.sin(p.angle) * dist;
+                    ctx.beginPath();
+                    ctx.arc(px, py, p.radius * (1 - t), 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${e.color}, ${alpha})`;
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawJudgement(now) {
+            if (!gameState.lastJudgement) {
+                judgementTextEl.textContent = "";
+                judgementTextEl.style.transform = "scale(1)";
+                return;
+            }
+            const elapsed = now - gameState.lastJudgementTime;
+            const duration = 0.9;
+            if (elapsed > duration) {
+                gameState.lastJudgement = "";
+                judgementTextEl.textContent = "";
+                judgementTextEl.style.transform = "scale(1)";
+                return;
+            }
+
+            const t = elapsed / duration;
+            const scale = 1 + 0.6 * (1 - t);
+            const opacity = 1 - t;
+
+            judgementTextEl.textContent = gameState.lastJudgement;
+            judgementTextEl.style.transform = `scale(${scale})`;
+            const txt = gameState.lastJudgement;
+            const isGold = txt.endsWith("+");
+            const base = isGold ? "252, 211, 77" : (
+                txt.startsWith("PERFECT") ? "248,250,252" :
+                    txt.startsWith("GOOD") ? "190,242,100" :
+                        txt.startsWith("BAD") ? "251,191,36" :
+                            "248,113,113"
+            );
+            judgementTextEl.style.color = `rgba(${base}, ${opacity})`;
+        }
+
         function drawBackground(deltaTime) {
             ctx.save();
-            ctx.fillStyle = "rgba(2,6,23,0.8)";
+            ctx.fillStyle = "rgba(2,6,23,0.9)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             for (const c of gameState.bgCircles) {
@@ -1185,7 +1631,35 @@
             ctx.restore();
         }
 
-        // 轮廓 + 判定环（与图形同步出现；判定环节奏仍参考 targetTime）
+        function drawChainLine(note, targetNote, nowAudio) {
+            const prev = note.prevOutline;
+            if (!prev) return;
+
+            const appear1 = prev.spawnTime;
+            const disappear1 = prev.targetTime + OUTLINE_HIDE_AFTER;
+            const appear2 = note.spawnTime;
+            const disappear2 = note.targetTime + OUTLINE_HIDE_AFTER;
+
+            const appear = Math.max(appear1, appear2);
+            const disappear = Math.min(disappear1, disappear2);
+
+            if (nowAudio < appear || nowAudio > disappear) return;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(note.x, note.y);
+
+            const isCurrentPath = (note === targetNote || prev === targetNote);
+            ctx.strokeStyle = isCurrentPath
+                ? "rgba(236,252,203,0.7)"
+                : "rgba(148,163,184,0.25)";
+            ctx.lineWidth = isCurrentPath ? 3 : 2;
+            ctx.setLineDash(isCurrentPath ? [10, 6] : [3, 10]);
+            ctx.stroke();
+            ctx.restore();
+        }
+
         function drawOutlineAndJudgeRing(note, audioTime, targetNote) {
             if (note.hit || note.missed) return;
 
@@ -1200,12 +1674,18 @@
 
             ctx.save();
 
-            // 1. 轮廓（目标图形）
             ctx.lineWidth = isTarget ? 5 : 3;
-            const baseAlpha = isTarget ? 0.9 : 0.5;
-            ctx.strokeStyle = isTarget
-                ? "rgba(244,244,255,0.95)"
-                : `rgba(148,163,255,${baseAlpha})`;
+            const baseAlpha = isTarget ? 0.95 : 0.55;
+
+            if (note.isGold) {
+                ctx.strokeStyle = isTarget
+                    ? `rgba(252, 211, 77, ${baseAlpha})`
+                    : `rgba(252, 211, 77, 0.7)`;
+            } else {
+                ctx.strokeStyle = isTarget
+                    ? "rgba(244,244,255,0.95)"
+                    : `rgba(148,163,255,${baseAlpha})`;
+            }
 
             const sides = 4 + ((note.x + note.y) | 0) % 3;
             ctx.beginPath();
@@ -1220,7 +1700,6 @@
             ctx.closePath();
             ctx.stroke();
 
-            // 2. 判定环：目标 note 有更亮的外圈
             const dt = note.targetTime - audioTime;
             const remaining = Math.min(Math.max(dt, 0), OUTLINE_SHOW_BEFORE);
             const k = OUTLINE_SHOW_BEFORE > 0 ? remaining / OUTLINE_SHOW_BEFORE : 0;
@@ -1230,16 +1709,21 @@
 
             ctx.beginPath();
             ctx.arc(note.x, note.y, ringRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = isTarget
-                ? `rgba(244,244,255,${ringAlpha})`
-                : `rgba(248,250,252,${ringAlpha})`;
+            if (note.isGold) {
+                ctx.strokeStyle = isTarget
+                    ? `rgba(253, 224, 71,${ringAlpha})`
+                    : `rgba(250, 204, 21,${ringAlpha * 0.9})`;
+            } else {
+                ctx.strokeStyle = isTarget
+                    ? `rgba(244,244,255,${ringAlpha})`
+                    : `rgba(248,250,252,${ringAlpha})`;
+            }
             ctx.lineWidth = isTarget ? 3 : 2;
             ctx.setLineDash(isTarget ? [2, 8] : [6, 10]);
             ctx.stroke();
 
             ctx.restore();
         }
-
 
         function drawNote(note, audioTime, deltaTime, targetNote) {
             if (note.hit || note.missed) return;
@@ -1249,20 +1733,23 @@
             if (pos.progress > 1.3) {
                 if (!note.hit && !note.missed) {
                     note.missed = true;
-                    applyJudgement(note, "MISS");
+                    note.trail = [];
+                    applyJudgement(note, "MISS", 0);
                 }
                 return;
             }
 
             const isTarget = (note === targetNote);
 
-            // 引导线：目标 note 的引导线更粗更亮
             ctx.save();
             ctx.beginPath();
             ctx.moveTo(pos.x, pos.y);
             ctx.lineTo(note.x, note.y);
             const gradientLine = ctx.createLinearGradient(pos.x, pos.y, note.x, note.y);
-            if (isTarget) {
+            if (note.isGold) {
+                gradientLine.addColorStop(0, "rgba(253,224,71,0.95)");
+                gradientLine.addColorStop(1, "rgba(245,158,11,0.0)");
+            } else if (isTarget) {
                 gradientLine.addColorStop(0, "rgba(248,250,252,0.95)");
                 gradientLine.addColorStop(1, "rgba(129,140,248,0.0)");
             } else {
@@ -1275,7 +1762,6 @@
             ctx.stroke();
             ctx.restore();
 
-            // 拖尾
             note.trail.push({ x: pos.x, y: pos.y });
             if (note.trail.length > 18) note.trail.shift();
 
@@ -1288,18 +1774,19 @@
                 const alpha = (i + 1) / note.trail.length;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, note.radius * 0.5 * (i / note.trail.length), 0, Math.PI * 2);
-                ctx.fillStyle = isTarget
-                    ? `rgba(248,250,252,${alpha * 0.45})`
-                    : `rgba(96,165,250,${alpha * 0.35})`;
+                if (note.isGold) {
+                    ctx.fillStyle = `rgba(252, 211, 77,${alpha * 0.45})`;
+                } else {
+                    ctx.fillStyle = isTarget
+                        ? `rgba(248,250,252,${alpha * 0.45})`
+                        : `rgba(96,165,250,${alpha * 0.35})`;
+                }
                 ctx.fill();
             }
 
             const p = Math.min(Math.max(pos.progress, 0), 1);
             let sizeScale = 0.85 + 0.35 * Math.sin(p * Math.PI * 0.5);
-            if (isTarget) {
-                // 当前目标做一点呼吸放大
-                sizeScale *= 1.08;
-            }
+            if (isTarget) sizeScale *= 1.08;
             const drawRadius = note.radius * sizeScale;
 
             note.rotation += note.rotationSpeed * deltaTime;
@@ -1311,14 +1798,18 @@
                 0, 0, drawRadius * 0.2,
                 0, 0, drawRadius
             );
-            if (isTarget) {
+            if (note.isGold) {
+                gradient.addColorStop(0, "rgba(255, 249, 196,1.0)");
+                gradient.addColorStop(0.35, "rgba(253, 224, 71,0.95)");
+                gradient.addColorStop(1, "rgba(245, 158, 11,0.9)");
+            } else if (isTarget) {
                 gradient.addColorStop(0, "rgba(248,250,252,1.0)");
                 gradient.addColorStop(0.35, "rgba(191,219,254,0.95)");
                 gradient.addColorStop(1, "rgba(129,140,248,0.9)");
             } else {
                 gradient.addColorStop(0, "rgba(248,250,252,0.95)");
-                gradient.addColorStop(0.4, "rgba(129, 140, 248,0.9)");
-                gradient.addColorStop(1, "rgba(236, 72, 153,0.7)");
+                gradient.addColorStop(0.4, "rgba(129,140,248,0.9)");
+                gradient.addColorStop(1, "rgba(236,72,153,0.7)");
             }
 
             ctx.beginPath();
@@ -1336,78 +1827,113 @@
             ctx.fill();
 
             ctx.lineWidth = isTarget ? 3 : 2;
-            ctx.strokeStyle = isTarget
-                ? "rgba(15,23,42,1)"
-                : "rgba(15,23,42,0.9)";
+            if (note.isGold) {
+                ctx.strokeStyle = "rgba(15, 23, 42, 0.95)";
+            } else {
+                ctx.strokeStyle = isTarget
+                    ? "rgba(15,23,42,1)"
+                    : "rgba(15,23,42,0.9)";
+            }
             ctx.stroke();
 
             ctx.restore();
         }
 
-        function drawHitEffects(now) {
-            ctx.save();
-            for (let i = gameState.hitEffects.length - 1; i >= 0; i--) {
-                const e = gameState.hitEffects[i];
-                const t = (now - e.startTime) / e.duration;
-                if (t >= 1) {
-                    gameState.hitEffects.splice(i, 1);
-                    continue;
-                }
-                const radius = (10 + t * 60) * e.scale;
-                ctx.beginPath();
-                ctx.arc(e.x, e.y, radius, 0, Math.PI * 2);
-                ctx.strokeStyle = e.color.replace("1)", `${1 - t})`);
-                ctx.lineWidth = 3 * (1 - t);
-                ctx.stroke();
-            }
-            ctx.restore();
+        // 导出谱面
+        function exportChart() {
+            if (!gameState.notes || !gameState.notes.length) return;
+
+            const data = {
+                version: 2,
+                difficulty: getDifficulty(),
+                approachTime: gameState.approachTime,
+                beatPeriod: gameState.lastBeatPeriod || 0.5,
+                notes: gameState.notes.map((n) => ({
+                    t: n.targetTime,
+                    x: +(n.x / canvas.width).toFixed(4),
+                    y: +(n.y / canvas.height).toFixed(4),
+                    r: +(n.radius / Math.min(canvas.width, canvas.height)).toFixed(4),
+                    gold: !!n.isGold,
+                    weight: n.weight || 1
+                })),
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `chart_${getDifficulty()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
         }
+        exportChartBtn.addEventListener("click", exportChart);
 
-        function drawJudgement(now) {
-            if (!gameState.lastJudgement) {
-                judgementTextEl.textContent = "";
-                return;
+        // 导出成绩图
+        function exportScoreImage() {
+            const total = gameState.totalNotes || 1;
+            if (!total) return;
+
+            const canvasOut = document.createElement("canvas");
+            canvasOut.width = 800;
+            canvasOut.height = 450;
+            const c = canvasOut.getContext("2d");
+
+            const grad = c.createLinearGradient(0, 0, 800, 450);
+            grad.addColorStop(0, "#0f172a");
+            grad.addColorStop(1, "#4f46e5");
+            c.fillStyle = grad;
+            c.fillRect(0, 0, 800, 450);
+
+            c.fillStyle = "#e5e7eb";
+            c.font = "20px system-ui";
+            c.fillText("图形节奏音乐游戏 - 成绩单", 40, 60);
+
+            c.font = "80px system-ui";
+            c.fillStyle = "#fbbf24";
+            c.fillText(gameState.currentGrade, 40, 160);
+
+            c.font = "26px system-ui";
+            c.fillStyle = "#e5e7eb";
+            c.fillText("Difficulty: " + getDifficulty(), 40, 200);
+
+            c.font = "40px system-ui";
+            c.fillStyle = "#f9fafb";
+            c.fillText(gameState.currentScorePercent.toFixed(4) + "%", 40, 250);
+
+            c.font = "22px system-ui";
+            c.fillStyle = "#e5e7eb";
+            const lineY = 290;
+            c.fillText(`Max Combo: ${gameState.maxCombo}`, 40, lineY);
+            c.fillText(`PERFECT: ${gameState.perfectCount}`, 40, lineY + 32);
+            c.fillText(`GOOD: ${gameState.goodCount}`, 40, lineY + 64);
+            c.fillText(`BAD: ${gameState.badCount}`, 270, lineY + 32);
+            c.fillText(`MISS: ${gameState.missCount}`, 270, lineY + 64);
+            c.fillText(`Notes: ${gameState.totalNotes}`, 270, lineY);
+
+            if (gameState.hitOffsets && gameState.hitOffsets.length) {
+                const arr = gameState.hitOffsets;
+                const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+                const sumSq = arr.reduce((a, b) => a + (b - avg) * (b - avg), 0);
+                const std = Math.sqrt(sumSq / arr.length);
+                const avgMs = avg * 1000;
+                const stdMs = std * 1000;
+                const text = `平均偏差: ${avgMs.toFixed(1)} ms, 离散度: ${stdMs.toFixed(1)} ms`;
+                c.fillText(text, 40, 380);
             }
-            const elapsed = now - gameState.lastJudgementTime;
-            const duration = 0.9;
-            if (elapsed > duration) {
-                gameState.lastJudgement = "";
-                judgementTextEl.textContent = "";
-                return;
-            }
 
-            const t = elapsed / duration;
-            const scale = 1 + 0.5 * (1 - t);
-            const opacity = 1 - t;
-
-            judgementTextEl.textContent = gameState.lastJudgement;
-            judgementTextEl.style.transform = `scale(${scale})`;
-            const color =
-                gameState.lastJudgement === "PERFECT"
-                    ? `rgba(248,250,252,${opacity})`
-                    : gameState.lastJudgement === "GOOD"
-                        ? `rgba(190,242,100,${opacity})`
-                        : gameState.lastJudgement === "BAD"
-                            ? `rgba(251,191,36,${opacity})`
-                            : `rgba(248,113,113,${opacity})`;
-            judgementTextEl.style.color = color;
+            const url = canvasOut.toDataURL("image/png");
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `score_${getDifficulty()}.png`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
         }
+        exportScoreBtn.addEventListener("click", exportScoreImage);
 
-        function exitGameplayScreen() {
-            document.body.style.overflow = "auto";
-
-            // 恢复 UI
-            document.querySelector("h1").style.display = "";
-            document.querySelector(".panel").style.display = "";
-            document.querySelector(".info").style.display = "";
-            document.querySelector(".stats").style.display = "";
-            document.querySelector(".judge-stats").style.display = "";
-            document.querySelector(".hint").style.display = "";
-
-            // 取消全屏 Canvas 布局
-            document.getElementById("gameContainer").classList.remove("fullscreen-play");
-        }
-
+        // 主循环
         let lastFrameTime = performance.now();
         function loop() {
             requestAnimationFrame(loop);
@@ -1421,10 +1947,13 @@
                     ? gameState.audioCtx.currentTime - gameState.startTime
                     : 0;
 
-            // 每帧找出下一个目标音符
             const targetNote = findNextTargetNote(nowAudio);
 
             drawBackground(deltaTime);
+
+            for (const note of gameState.notes) {
+                drawChainLine(note, targetNote, nowAudio);
+            }
 
             for (const note of gameState.notes) {
                 drawOutlineAndJudgeRing(note, nowAudio, targetNote);
@@ -1434,6 +1963,10 @@
                 drawNote(note, nowAudio, deltaTime, targetNote);
             }
 
+            gameState.notes = gameState.notes.filter(n => {
+                if (!n.missed) return true;
+                return nowAudio - n.targetTime < 2;
+            });
 
             drawHitEffects(nowPerf / 1000);
             drawJudgement(nowPerf / 1000);
@@ -1446,9 +1979,10 @@
                 gameState.isPlaying = false;
                 exitGameplayScreen();
                 exitFullscreen();
-                infoText.textContent = "本曲结束。可重新点击“开始游戏”再玩一次。";
+                infoText.textContent = "本曲结束。可重新点击“开始游戏”再玩一次，或导出谱面 / 成绩图。";
+                exportScoreBtn.disabled = false;
+                exportChartBtn.disabled = false;
             }
-
         }
         loop();
     </script>
