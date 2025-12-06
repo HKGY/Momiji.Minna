@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>图形节奏音乐游戏 – 多难度&金色音符</title>
+    <title>图形节奏音乐游戏</title>
     <style>
         * {
             box-sizing: border-box;
@@ -20,15 +20,19 @@
             min-height: 100vh;
             padding: 16px;
             overflow: hidden;
-            background: radial-gradient(circle at top, #1b1f3a, #050710);
+            background:
+                radial-gradient(circle at top, #1b1f3a, #050710 60%, #020617 100%);
             color: #f5f5f5;
         }
 
         h1 {
-            font-size: 24px;
+            font-size: 26px;
             margin-bottom: 8px;
-            letter-spacing: 2px;
+            letter-spacing: 4px;
             text-transform: uppercase;
+            text-shadow:
+                0 0 12px rgba(59, 130, 246, 0.8),
+                0 0 30px rgba(236, 72, 153, 0.7);
         }
 
         .panel {
@@ -38,11 +42,16 @@
             margin-bottom: 8px;
             flex-wrap: wrap;
             justify-content: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.4));
+            box-shadow: 0 12px 40px rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
         }
 
         .panel label {
             font-size: 14px;
-            opacity: 0.8;
+            opacity: 0.9;
         }
 
         input[type="file"] {
@@ -50,8 +59,7 @@
             max-width: 240px;
         }
 
-        button,
-        select {
+        button {
             border: none;
             padding: 8px 14px;
             border-radius: 999px;
@@ -62,32 +70,47 @@
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
             transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease, background 0.2s ease;
             outline: none;
+            position: relative;
+            overflow: hidden;
         }
 
-        select {
-            padding-right: 24px;
-            background: linear-gradient(135deg, #0f172a, #4f46e5);
+        button::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.35), transparent 60%);
+            opacity: 0;
+            transition: opacity 0.25s ease;
         }
 
-        button:disabled,
-        select:disabled {
-            opacity: 0.4;
+        button:disabled {
+            opacity: 0.45;
             cursor: default;
             box-shadow: none;
             filter: grayscale(0.3);
         }
 
-        button:not(:disabled):hover,
-        select:not(:disabled):hover {
-            transform: translateY(-1px) scale(1.02);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-            filter: brightness(1.05);
+        button:not(:disabled):hover {
+            transform: translateY(-1px) scale(1.04);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+            filter: brightness(1.07);
+        }
+
+        button:not(:disabled):hover::before {
+            opacity: 1;
         }
 
         .info {
             font-size: 13px;
-            opacity: 0.75;
-            margin-bottom: 8px;
+            opacity: 0.78;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+
+        #songTitle {
+            font-size: 13px;
+            opacity: 0.88;
+            margin-bottom: 6px;
             text-align: center;
         }
 
@@ -144,12 +167,12 @@
             font-size: 12px;
             opacity: 0.6;
             text-align: center;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         #offsetStats {
             font-size: 12px;
-            opacity: 0.75;
+            opacity: 0.8;
             margin-bottom: 8px;
             text-align: center;
         }
@@ -160,8 +183,10 @@
         }
 
         canvas {
-            border-radius: 20px;
-            box-shadow: 0 20px 70px rgba(0, 0, 0, 0.7);
+            border-radius: 26px;
+            box-shadow:
+                0 20px 70px rgba(0, 0, 0, 0.8),
+                0 0 60px rgba(56, 189, 248, 0.2);
             background: radial-gradient(circle at bottom, #020617, #030712 55%, #020617 100%);
             max-width: 100%;
             display: block;
@@ -179,7 +204,56 @@
             text-shadow: 0 0 16px rgba(0, 0, 0, 0.9);
         }
 
-        /* 中心无边框，只保留炫光文字 */
+        .center-orbit {
+            position: absolute;
+            width: 46%;
+            max-width: 420px;
+            aspect-ratio: 1 / 1;
+            border-radius: 999px;
+            border: 2px solid rgba(148, 163, 255, 0.5);
+            box-shadow:
+                0 0 35px rgba(37, 99, 235, 0.8),
+                0 0 60px rgba(236, 72, 153, 0.6);
+            filter: blur(0.2px);
+            opacity: 0.45;
+            animation: orbitPulse 2.8s ease-in-out infinite;
+        }
+
+        .center-orbit::before {
+            content: "";
+            position: absolute;
+            inset: 18%;
+            border-radius: inherit;
+            border: 1px dashed rgba(248, 250, 252, 0.4);
+            box-shadow: 0 0 20px rgba(248, 250, 252, 0.3);
+        }
+
+        .center-orbit::after {
+            content: "";
+            position: absolute;
+            inset: 46%;
+            border-radius: inherit;
+            background: radial-gradient(circle, rgba(248, 250, 252, 0.6), transparent 60%);
+            opacity: 0.7;
+        }
+
+        @keyframes orbitPulse {
+            0% {
+                transform: scale(0.98) rotate(0deg);
+                opacity: 0.4;
+            }
+
+            50% {
+                transform: scale(1.03) rotate(3deg);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: scale(0.98) rotate(0deg);
+                opacity: 0.4;
+            }
+        }
+
         .center-score {
             font-size: 26px;
             margin-bottom: 6px;
@@ -187,32 +261,31 @@
             z-index: 1;
             color: #e5e7eb;
             text-shadow:
-                0 0 18px rgba(59, 130, 246, 0.8),
-                0 0 30px rgba(236, 72, 153, 0.6);
+                0 0 22px rgba(59, 130, 246, 0.9),
+                0 0 40px rgba(236, 72, 153, 0.85);
         }
 
         .center-combo {
             font-size: 18px;
             margin-bottom: 6px;
-            opacity: 0.95;
+            opacity: 0.98;
             z-index: 1;
             color: #f9fafb;
             text-shadow:
-                0 0 15px rgba(56, 189, 248, 0.8),
-                0 0 26px rgba(37, 99, 235, 0.7);
+                0 0 16px rgba(56, 189, 248, 0.9),
+                0 0 26px rgba(37, 99, 235, 0.9);
         }
 
         .center-judge {
-            min-height: 28px;
+            min-height: 30px;
             font-size: 26px;
             font-weight: 800;
             letter-spacing: 6px;
             text-transform: uppercase;
-            z-index: 1;
+            z-index: 2;
             transition: transform 0.1s ease;
         }
 
-        /* 全屏模式 */
         .fullscreen-play {
             position: fixed !important;
             inset: 0 !important;
@@ -232,6 +305,13 @@
             height: 100vh !important;
             object-fit: contain;
         }
+
+        .footer {
+            margin-top: 8px;
+            font-size: 11px;
+            opacity: 0.4;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -244,16 +324,11 @@
             <input type="file" id="fileInput" accept="audio/mpeg,audio/mp3" />
         </label>
         <button id="startBtn" disabled>开始游戏</button>
-        <select id="difficultySelect">
-            <option value="easy">简单</option>
-            <option value="normal" selected>普通</option>
-            <option value="hard">困难</option>
-            <option value="master">大师</option>
-        </select>
         <button id="useExampleBtn">示例歌曲</button>
-        <button id="exportChartBtn" disabled>导出谱面</button>
         <button id="exportScoreBtn" disabled>导出成绩图</button>
     </div>
+
+    <div id="songTitle">当前乐曲：-</div>
 
     <div class="info" id="infoText">
         请选择一首 mp3，程序会用频域分析 + pattern 自动生成节奏谱面。<br />
@@ -281,6 +356,10 @@
             <span class="label">Notes</span>
             <span class="value" id="noteCount">0</span>
         </div>
+        <div>
+            <span class="label">NPM</span>
+            <span class="value" id="npm">0.0</span>
+        </div>
     </div>
 
     <div class="judge-stats">
@@ -291,8 +370,7 @@
     </div>
 
     <div class="hint">
-        分数以 100.0000% 为基准，每个 note 按权重平分：<br />
-        PERFECT = 1.0，GOOD = 0.7，BAD = 0.4，MISS = 0；金色音符权重 ×3。<br />
+        分数以 100.0000% 为基准：PERFECT = 1.0，GOOD = 0.7，BAD = 0.4，MISS = 0。金色音符权重 ×3。<br />
         额外根据最大连击加最多 +2% 加成，可突破 100% 拿到 SSS+。
     </div>
 
@@ -301,81 +379,19 @@
     <div id="gameContainer" class="game-wrapper">
         <canvas id="gameCanvas" width="900" height="540"></canvas>
         <div class="center-hud">
+            <div class="center-orbit"></div>
             <div id="centerScore" class="center-score">0.0000% [D]</div>
             <div id="centerCombo" class="center-combo">Combo 0</div>
             <div id="judgementText" class="center-judge"></div>
         </div>
     </div>
 
+    <div class="footer">点击 / 触摸屏幕任意位置也能打击音符</div>
+
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        const fileInput = document.getElementById("fileInput");
-        const startBtn = document.getElementById("startBtn");
-        const infoText = document.getElementById("infoText");
-        const difficultySelect = document.getElementById("difficultySelect");
-        const useExampleBtn = document.getElementById("useExampleBtn");
-        const exportChartBtn = document.getElementById("exportChartBtn");
-        const exportScoreBtn = document.getElementById("exportScoreBtn");
-        const offsetStatsEl = document.getElementById("offsetStats");
-
-        const scorePercentEl = document.getElementById("scorePercent");
-        const scoreGradeEl = document.getElementById("scoreGrade");
-        const comboEl = document.getElementById("combo");
-        const maxComboEl = document.getElementById("maxCombo");
-        const noteCountEl = document.getElementById("noteCount");
-
-        const countPerfectEl = document.getElementById("countPerfect");
-        const countGoodEl = document.getElementById("countGood");
-        const countBadEl = document.getElementById("countBad");
-        const countMissEl = document.getElementById("countMiss");
-
-        const centreScoreEl = document.getElementById("centerScore");
-        const centreComboEl = document.getElementById("centerCombo");
-        const judgementTextEl = document.getElementById("judgementText");
-
-        const OUTLINE_SHOW_BEFORE = 0.5;
-        const OUTLINE_HIDE_AFTER = 0.25;
-        const EXAMPLE_MP3_URL = "example.mp3"; // 请把 example.mp3 放在同目录
-
-        const gameState = {
-            audioCtx: null,
-            buffer: null,
-            source: null,
-            isPlaying: false,
-            startTime: 0,
-            approachTime: 1.4,
-            notes: [],
-            totalNotes: 0,
-            totalWeight: 1,
-            scoreValue: 0,
-            combo: 0,
-            maxCombo: 0,
-            perfectCount: 0,
-            goodCount: 0,
-            badCount: 0,
-            missCount: 0,
-            currentScorePercent: 0,
-            currentGrade: "D",
-            currentGradeLevel: 0,
-            lastJudgement: "",
-            lastJudgementTime: 0,
-            hitEffects: [],
-            bgCircles: [],
-            lastBeats: [],
-            lastBeatPeriod: 0.5,
-            hitOffsets: []
-        };
-
-        exportChartBtn.disabled = true;
-        exportScoreBtn.disabled = true;
-
-        function getDifficulty() {
-            return difficultySelect ? difficultySelect.value : "normal";
-        }
-
-        // Pointer / Touch
         canvas.addEventListener("pointerdown", (e) => {
             e.preventDefault();
             if (gameState.audioCtx && gameState.audioCtx.state === "suspended") {
@@ -394,7 +410,67 @@
             handleTapScreen(touch.clientX, touch.clientY);
         }, { passive: false });
 
-        // 全屏
+        const fileInput = document.getElementById("fileInput");
+        const startBtn = document.getElementById("startBtn");
+        const infoText = document.getElementById("infoText");
+        const useExampleBtn = document.getElementById("useExampleBtn");
+        const exportScoreBtn = document.getElementById("exportScoreBtn");
+        const offsetStatsEl = document.getElementById("offsetStats");
+        const songTitleEl = document.getElementById("songTitle");
+
+        const scorePercentEl = document.getElementById("scorePercent");
+        const scoreGradeEl = document.getElementById("scoreGrade");
+        const comboEl = document.getElementById("combo");
+        const maxComboEl = document.getElementById("maxCombo");
+        const noteCountEl = document.getElementById("noteCount");
+        const npmEl = document.getElementById("npm");
+
+        const countPerfectEl = document.getElementById("countPerfect");
+        const countGoodEl = document.getElementById("countGood");
+        const countBadEl = document.getElementById("countBad");
+        const countMissEl = document.getElementById("countMiss");
+
+        const centreScoreEl = document.getElementById("centerScore");
+        const centreComboEl = document.getElementById("centerCombo");
+        const judgementTextEl = document.getElementById("judgementText");
+
+        const OUTLINE_SHOW_BEFORE = 0.5;
+        const OUTLINE_HIDE_AFTER = 0.25;
+        const EXAMPLE_MP3_URL = "example.mp3";
+
+        const gameState = {
+            audioCtx: null,
+            buffer: null,
+            source: null,
+            isPlaying: false,
+            startTime: 0,
+            approachTime: 1.2,
+            notes: [],
+            totalNotes: 0,
+            totalWeight: 1,
+            scoreValue: 0,
+            combo: 0,
+            maxCombo: 0,
+            perfectCount: 0,
+            goodCount: 0,
+            badCount: 0,
+            missCount: 0,
+            currentScorePercent: 0,
+            currentGrade: "D",
+            currentGradeLevel: 0,
+            lastJudgement: "",
+            lastJudgementTime: 0,
+            hitEffects: [],
+            bgCircles: [],
+            bgRays: [],
+            lastBeats: [],
+            lastBeatPeriod: 0.5,
+            hitOffsets: [],
+            currentSongName: "Unknown Track"
+        };
+
+        exportScoreBtn.disabled = true;
+
         function enterFullscreen() {
             const elem = document.documentElement;
             if (elem.requestFullscreen) {
@@ -433,53 +509,40 @@
 
         function initBackground() {
             gameState.bgCircles = [];
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < 24; i++) {
                 gameState.bgCircles.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
-                    r: 20 + Math.random() * 60,
-                    speed: 0.2 + Math.random() * 0.4,
-                    alpha: 0.06 + Math.random() * 0.1
+                    r: 20 + Math.random() * 80,
+                    speed: 0.2 + Math.random() * 0.6,
+                    alpha: 0.04 + Math.random() * 0.08
+                });
+            }
+
+            gameState.bgRays = [];
+            const rayCount = 18;
+            for (let i = 0; i < rayCount; i++) {
+                gameState.bgRays.push({
+                    angle: (i / rayCount) * Math.PI * 2,
+                    width: 0.012 + Math.random() * 0.02,
+                    speed: (0.1 + Math.random() * 0.15) * (Math.random() < 0.5 ? 1 : -1),
+                    alpha: 0.04 + Math.random() * 0.07
                 });
             }
         }
         initBackground();
 
-        // 难度设置：更明显的飞行速度差别
-        function applyDifficultySettings() {
-            const diff = getDifficulty();
-            if (diff === "easy") {
-                gameState.approachTime = 2.0;    // 很慢
-            } else if (diff === "normal") {
-                gameState.approachTime = 1.4;
-            } else if (diff === "hard") {
-                gameState.approachTime = 0.9;
-            } else if (diff === "master") {
-                gameState.approachTime = 0.7;    // 非常快
-            }
-        }
-
-        if (difficultySelect) {
-            difficultySelect.addEventListener("change", () => {
-                applyDifficultySettings();
-                if (gameState.lastBeats && gameState.lastBeats.length) {
-                    prepareNotes(gameState.lastBeats, gameState.lastBeatPeriod || 0.5);
-                    gameState.totalNotes = gameState.notes.length;
-                    noteCountEl.textContent = gameState.totalNotes;
-                    resetScoreState();
-                }
-            });
-        }
-
-        // 音频加载：文件
         fileInput.addEventListener("change", async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             startBtn.disabled = true;
-            exportChartBtn.disabled = true;
             exportScoreBtn.disabled = true;
             judgementTextEl.textContent = "";
             infoText.textContent = "正在解码音频并进行频域分析，请稍等几秒...";
+
+            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+            gameState.currentSongName = nameWithoutExt || "Unknown Track";
+            songTitleEl.textContent = "当前乐曲：" + gameState.currentSongName;
 
             try {
                 const arrayBuffer = await file.arrayBuffer();
@@ -499,16 +562,15 @@
                 if (beats.length === 0) {
                     infoText.textContent = "节拍检测结果为空，可能是比较平的背景音。你仍可点“开始游戏”体验一下。";
                 } else {
-                    infoText.textContent = `已生成节奏谱面，原始约 ${beats.length} 个音符（不同难度会调整数量和密度）。`;
+                    infoText.textContent = `已生成节奏谱面，原始约 ${beats.length} 个音符。`;
                 }
 
-                applyDifficultySettings();
                 prepareNotes(beats, beatPeriod);
                 gameState.totalNotes = gameState.notes.length;
                 noteCountEl.textContent = gameState.totalNotes;
+                updateNPM();
                 startBtn.disabled = false;
-                exportChartBtn.disabled = false;
-                exportScoreBtn.disabled = true;
+                exportScoreBtn.disabled = false;
                 resetScoreState();
             } catch (err) {
                 console.error(err);
@@ -516,11 +578,9 @@
             }
         });
 
-        // 音频加载：示例
         useExampleBtn.addEventListener("click", async () => {
             try {
                 startBtn.disabled = true;
-                exportChartBtn.disabled = true;
                 exportScoreBtn.disabled = true;
                 infoText.textContent = "正在加载示例 mp3...";
 
@@ -532,6 +592,11 @@
                 const arrayBuffer = await res.arrayBuffer();
                 const buffer = await gameState.audioCtx.decodeAudioData(arrayBuffer);
                 gameState.buffer = buffer;
+
+                const urlName = EXAMPLE_MP3_URL.split("/").pop() || "示例歌曲";
+                const baseName = urlName.replace(/\.[^/.]+$/, "");
+                gameState.currentSongName = baseName || "示例歌曲";
+                songTitleEl.textContent = "当前乐曲：" + gameState.currentSongName;
 
                 infoText.textContent = "基于示例歌曲生成谱面中...";
                 const { beats, beatPeriod } = generateBeatTimes(buffer);
@@ -545,13 +610,12 @@
                     infoText.textContent = `已生成示例谱面，原始约 ${beats.length} 个音符。`;
                 }
 
-                applyDifficultySettings();
                 prepareNotes(beats, beatPeriod);
                 gameState.totalNotes = gameState.notes.length;
                 noteCountEl.textContent = gameState.totalNotes;
+                updateNPM();
                 startBtn.disabled = false;
-                exportChartBtn.disabled = false;
-                exportScoreBtn.disabled = true;
+                exportScoreBtn.disabled = false;
                 resetScoreState();
             } catch (err) {
                 console.error(err);
@@ -559,7 +623,6 @@
             }
         });
 
-        // 频域节拍检测
         function generateBeatTimes(buffer) {
             const channelData = buffer.getChannelData(0);
             const sampleRate = buffer.sampleRate;
@@ -808,7 +871,6 @@
             return { beats: merged, beatPeriod };
         }
 
-        // 构造更密集的节拍：插入中点，重复多轮用于 Hard/Master
         function buildDenseBeats(baseBeats, beatPeriod, level) {
             let current = baseBeats.slice();
             for (let iter = 0; iter < level; iter++) {
@@ -824,9 +886,8 @@
                 current = current.concat(extra);
                 current.sort((a, b) => a - b);
 
-                // 稍微去重
                 const merged = [];
-                const minGap = beatPeriod * 0.14;
+                const minGap = beatPeriod * 0.16;
                 for (let i = 0; i < current.length; i++) {
                     if (i === 0 || current[i] - merged[merged.length - 1] > minGap) {
                         merged.push(current[i]);
@@ -837,103 +898,28 @@
             return current;
         }
 
-        // 根据难度选出真正用来生成 note 的时间点
-        function selectBeatsForDifficulty(baseBeats, beatPeriod) {
-            const diff = getDifficulty();
+        function selectBeats(baseBeats, beatPeriod) {
             if (!baseBeats.length) return [];
+            const dense = buildDenseBeats(baseBeats, beatPeriod, 1);
+            let source = dense;
+            const targetCount = Math.round(baseBeats.length * 1.6);
 
-            const normalBeats = baseBeats.slice();
-            const normalCount = normalBeats.length;
-
-            const ratioMap = {
-                easy: 0.5,
-                normal: 1.0,
-                hard: 1.5,
-                master: 2.0
-            };
-            const targetRatio = ratioMap[diff] || 1.0;
-            let targetCount = Math.max(1, Math.round(normalCount * targetRatio));
-
-            let source = normalBeats;
-
-            if (diff === "easy") {
-                // Easy：源节拍本身，最后再强制“相邻间隔 >= 1.2 beatPeriod”
-                source = normalBeats;
-            } else if (diff === "normal") {
-                // Normal：仍用原节拍，只在太密时去掉部分
-                source = normalBeats;
-            } else if (diff === "hard") {
-                // Hard：一轮加密
-                source = buildDenseBeats(normalBeats, beatPeriod, 1);
-            } else if (diff === "master") {
-                // Master：再加密一轮，形成 8/16 分节奏感
-                source = buildDenseBeats(normalBeats, beatPeriod, 2);
-            }
-
-            if (source.length <= targetCount) {
-                targetCount = source.length;
-                // 特殊处理 easy，让 pattern 更稀疏&规则
-                if (diff === "easy") {
-                    const result = [];
-                    let lastT = -Infinity;
-                    const minGapEasy = beatPeriod * 1.2;
-                    for (let i = 0; i < source.length; i++) {
-                        const t = source[i];
-                        if (t - lastT >= minGapEasy) {
-                            result.push(t);
-                            lastT = t;
-                        }
-                    }
-                    return result;
+            if (source.length > targetCount) {
+                const resultTemp = [];
+                const step = source.length / targetCount;
+                for (let i = 0; i < targetCount; i++) {
+                    const idx = Math.floor(i * step);
+                    if (idx >= 0 && idx < source.length) resultTemp.push(source[idx]);
                 }
-                return source;
+                source = resultTemp;
             }
 
-            // 统一用“均匀采样”从 source 取 targetCount 个点
-            const resultTemp = [];
-            const step = source.length / targetCount;
-            for (let i = 0; i < targetCount; i++) {
-                const idx = Math.floor(i * step);
-                if (idx >= 0 && idx < source.length) resultTemp.push(source[idx]);
-            }
-
-            // 针对 Easy 再做一次“至少间隔 1.2 beatPeriod”的修正，进一步拉大难度差距
-            if (diff === "easy") {
-                const result = [];
-                let lastT = -Infinity;
-                const minGapEasy = beatPeriod * 1.2;
-                for (let i = 0; i < resultTemp.length; i++) {
-                    const t = resultTemp[i];
-                    if (t - lastT >= minGapEasy) {
-                        result.push(t);
-                        lastT = t;
-                    }
-                }
-                return result;
-            }
-
-            // Normal：略微过滤特别密集的
-            if (diff === "normal") {
-                const result = [];
-                let lastT = -Infinity;
-                const minGapNormal = beatPeriod * 0.45;
-                for (let i = 0; i < resultTemp.length; i++) {
-                    const t = resultTemp[i];
-                    if (t - lastT >= minGapNormal) {
-                        result.push(t);
-                        lastT = t;
-                    }
-                }
-                return result;
-            }
-
-            // Hard / Master：保留密集感，只略微压掉极端重复
             const result = [];
             let lastT = -Infinity;
-            const minGapDense = beatPeriod * 0.18;
-            for (let i = 0; i < resultTemp.length; i++) {
-                const t = resultTemp[i];
-                if (t - lastT >= minGapDense) {
+            const minGap = beatPeriod * 0.2;
+            for (let i = 0; i < source.length; i++) {
+                const t = source[i];
+                if (t - lastT >= minGap) {
                     result.push(t);
                     lastT = t;
                 }
@@ -941,7 +927,6 @@
             return result;
         }
 
-        // 生成相对平滑的判定区位置
         function chooseNotePosition(lastPos, margin) {
             const width = canvas.width;
             const height = canvas.height;
@@ -957,22 +942,10 @@
                 };
             }
 
-            const diff = getDifficulty();
-            // 难度越高，平均位移略大一点
-            let minStep = 140;
-            let maxStep = 260;
-            if (diff === "easy") {
-                minStep = 120;
-                maxStep = 220;
-            } else if (diff === "hard") {
-                minStep = 160;
-                maxStep = 280;
-            } else if (diff === "master") {
-                minStep = 170;
-                maxStep = 320;
-            }
+            let minStep = 110;
+            let maxStep = 220;
 
-            const angle = Math.random() * Math.PI * 2;
+            const angle = (Math.random() * Math.PI * 2);
             const step = minStep + Math.random() * (maxStep - minStep);
             let x = lastPos.x + Math.cos(angle) * step;
             let y = lastPos.y + Math.sin(angle) * step;
@@ -982,9 +955,8 @@
             return { x, y };
         }
 
-        // 谱面生成（无 hold）
         function prepareNotes(beats, beatPeriod) {
-            const selectedBeats = selectBeatsForDifficulty(beats, beatPeriod);
+            const selectedBeats = selectBeats(beats, beatPeriod);
             gameState.notes = [];
 
             const margin = 110;
@@ -1028,15 +1000,9 @@
                 prevNote = note;
             }
 
-            // 金色音符：根据难度比例
             const n = gameState.notes.length;
             if (n > 0) {
-                const diff = getDifficulty();
-                const goldRatio =
-                    diff === "easy" ? 0.06 :
-                        diff === "normal" ? 0.09 :
-                            diff === "hard" ? 0.13 :
-                                0.18; // master
+                const goldRatio = 0.12;
                 const goldTarget = Math.max(1, Math.round(n * goldRatio));
 
                 const indices = [...Array(n).keys()];
@@ -1053,7 +1019,6 @@
 
             gameState.notes.sort((a, b) => a.targetTime - b.targetTime);
 
-            // 计算总权重
             let totalWeight = 0;
             for (const nNote of gameState.notes) {
                 totalWeight += nNote.weight || 1;
@@ -1061,7 +1026,18 @@
             gameState.totalWeight = totalWeight || 1;
         }
 
-        // 游戏控制
+        function updateNPM() {
+            if (!npmEl) return;
+            if (!gameState.buffer || !gameState.notes.length) {
+                npmEl.textContent = "0.0";
+                return;
+            }
+            const duration = gameState.buffer.duration || 1;
+            const total = gameState.notes.length;
+            const npm = total / (duration / 60);
+            npmEl.textContent = npm.toFixed(1);
+        }
+
         startBtn.addEventListener("click", async () => {
             if (!gameState.buffer || !gameState.audioCtx) return;
             enterGameplayScreen();
@@ -1073,11 +1049,13 @@
             document.body.style.overflow = "hidden";
             document.querySelector("h1").style.display = "none";
             document.querySelector(".panel").style.display = "none";
+            document.getElementById("songTitle").style.display = "none";
             document.querySelector(".info").style.display = "none";
             document.querySelector(".stats").style.display = "none";
             document.querySelector(".judge-stats").style.display = "none";
             document.querySelector(".hint").style.display = "none";
             offsetStatsEl.style.display = "none";
+            document.querySelector(".footer").style.display = "none";
             document.getElementById("gameContainer").classList.add("fullscreen-play");
         }
 
@@ -1085,11 +1063,13 @@
             document.body.style.overflow = "auto";
             document.querySelector("h1").style.display = "";
             document.querySelector(".panel").style.display = "";
+            document.getElementById("songTitle").style.display = "";
             document.querySelector(".info").style.display = "";
             document.querySelector(".stats").style.display = "";
             document.querySelector(".judge-stats").style.display = "";
             document.querySelector(".hint").style.display = "";
             offsetStatsEl.style.display = "";
+            document.querySelector(".footer").style.display = "";
             document.getElementById("gameContainer").classList.remove("fullscreen-play");
         }
 
@@ -1133,11 +1113,9 @@
             judgementTextEl.textContent = "";
             judgementTextEl.style.transform = "scale(1)";
             if (offsetStatsEl) offsetStatsEl.textContent = "";
-
             updateScoreAndUI();
         }
 
-        // 判定（键盘）
         window.addEventListener("keydown", (e) => {
             if (e.code === "Space") {
                 e.preventDefault();
@@ -1145,51 +1123,17 @@
             }
         });
 
-        // 不同难度判定线
         function judgeHit(absTimeDiff, distRatio) {
-            const diff = getDifficulty();
+            const radiusLimit = 1.05;
+            if (distRatio > radiusLimit) return "MISS";
 
-            // Normal 基准
-            let tPerfect = 0.08;
-            let tGood = 0.16;
-            let tBad = 0.26;
+            let tPerfect = 0.025; // 25ms
+            let tGood = 0.060;    // 60ms
+            let tBad = 0.120;     // 120ms
 
-            let dPerfect = 0.45;
-            let dGood = 0.85;
-            let dBad = 1.20;
-
-            if (diff === "easy") {
-                const tf = 1.5;
-                const df = 1.3;
-                tPerfect *= tf;
-                tGood *= tf;
-                tBad *= tf;
-                dPerfect *= df;
-                dGood *= df;
-                dBad *= df;
-            } else if (diff === "hard") {
-                const tf = 0.75;
-                const df = 0.8;
-                tPerfect *= tf;
-                tGood *= tf;
-                tBad *= tf;
-                dPerfect *= df;
-                dGood *= df;
-                dBad *= df;
-            } else if (diff === "master") {
-                const tf = 0.6;
-                const df = 0.75;
-                tPerfect *= tf;
-                tGood *= tf;
-                tBad *= tf;
-                dPerfect *= df;
-                dGood *= df;
-                dBad *= df;
-            }
-
-            if (absTimeDiff <= tPerfect && distRatio <= dPerfect) return "PERFECT";
-            if (absTimeDiff <= tGood && distRatio <= dGood) return "GOOD";
-            if (absTimeDiff <= tBad && distRatio <= dBad) return "BAD";
+            if (absTimeDiff <= tPerfect) return "PERFECT";
+            if (absTimeDiff <= tGood) return "GOOD";
+            if (absTimeDiff <= tBad) return "BAD";
             return "MISS";
         }
 
@@ -1213,14 +1157,14 @@
 
                 const dt = now - note.targetTime;
                 const adt = Math.abs(dt);
-                if (adt > 0.32) continue;
+                if (adt > 0.25) continue;
 
                 const pos = getNotePosition(note, now);
                 const dist = Math.hypot(pos.x - x, pos.y - y);
                 const distRatio = dist / note.radius;
-                if (distRatio > 1.8) continue;
+                if (distRatio > 1.5) continue;
 
-                const score = adt * 1.0 + distRatio * 0.06;
+                const score = adt * 1.0 + distRatio * 0.02;
                 if (score < bestScore) {
                     bestScore = score;
                     bestNote = note;
@@ -1252,15 +1196,23 @@
 
             let bestNote = null;
             let bestDiff = Infinity;
+            let bestDistRatio = 0;
 
             for (const note of gameState.notes) {
                 if (note.hit || note.missed) continue;
                 const diff = now - note.targetTime;
                 const ad = Math.abs(diff);
-                if (ad > 0.3) continue;
+                if (ad > 0.25) continue;
+
+                const pos = getNotePosition(note, now);
+                const dist = Math.hypot(pos.x - note.x, pos.y - note.y);
+                const distRatio = dist / note.radius;
+                if (distRatio > 1.5) continue;
+
                 if (ad < bestDiff) {
                     bestDiff = ad;
                     bestNote = note;
+                    bestDistRatio = distRatio;
                 }
             }
 
@@ -1269,12 +1221,8 @@
                 return;
             }
 
-            const currentPos = getNotePosition(bestNote, now);
-            const dist = Math.hypot(currentPos.x - bestNote.x, currentPos.y - bestNote.y);
-            const distRatio = dist / bestNote.radius;
-
             const offset = now - bestNote.targetTime;
-            const result = judgeHit(Math.abs(offset), distRatio);
+            const result = judgeHit(Math.abs(offset), bestDistRatio);
 
             if (result === "MISS") {
                 bestNote.missed = true;
@@ -1303,7 +1251,6 @@
             else if (result === "BAD") gameState.badCount++;
             else gameState.missCount++;
 
-            // 只有 PERFECT/GOOD 维持连击；BAD/MISS 断
             if (result === "PERFECT" || result === "GOOD") {
                 gameState.combo += 1;
                 if (gameState.combo > gameState.maxCombo) {
@@ -1430,29 +1377,29 @@
             const clickGain = ctxAudio.createGain();
 
             let freq = 900;
-            let baseGain = 0.22;
+            let baseGain = 0.28;
             let duration = 0.07;
 
             if (result === "PERFECT") {
-                freq = isGold ? 1350 : 1200;
-                baseGain = 0.26;
+                freq = isGold ? 1400 : 1200;
+                baseGain = 0.32;
                 duration = 0.06;
             } else if (result === "GOOD") {
-                freq = isGold ? 1100 : 1000;
-                baseGain = 0.25;
+                freq = isGold ? 1150 : 1000;
+                baseGain = 0.30;
                 duration = 0.07;
             } else if (result === "BAD") {
                 freq = 650;
-                baseGain = 0.28;
+                baseGain = 0.34;
                 duration = 0.09;
             } else {
                 freq = 420;
-                baseGain = 0.20;
+                baseGain = 0.26;
                 duration = 0.06;
             }
 
             const gradeLevel = gameState.currentGradeLevel || 0;
-            const volumeFactor = Math.max(0.35, 1 - gradeLevel * 0.06);
+            const volumeFactor = Math.max(0.55, 1 - gradeLevel * 0.04);
             baseGain *= volumeFactor * (isGold ? 1.15 : 1.0);
 
             osc.frequency.value = freq;
@@ -1464,11 +1411,11 @@
             const now = ctxAudio.currentTime;
 
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(baseGain, now + 0.005);
+            gain.gain.linearRampToValueAtTime(baseGain, now + 0.004);
             gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
-            clickGain.gain.setValueAtTime(baseGain * 0.6, now);
-            clickGain.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.6);
+            clickGain.gain.setValueAtTime(baseGain * 0.75, now);
+            clickGain.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.55);
 
             osc.connect(gain);
             clickOsc.connect(clickGain);
@@ -1495,25 +1442,25 @@
 
             const gradeScale = 1 + (gameState.currentGradeLevel || 0) * 0.08;
             let baseScale = 1;
-            let duration = 0.35;
+            let duration = 0.42;
             let rings = 2;
-            let particles = 14;
+            let particles = 16;
 
             if (type === "PERFECT") {
-                baseScale = 1.3;
-                duration = 0.45;
+                baseScale = 1.35;
+                duration = 0.5;
                 rings = isGold ? 4 : 3;
-                particles = isGold ? 26 : 22;
+                particles = isGold ? 28 : 22;
             } else if (type === "GOOD") {
-                baseScale = 1.0;
-                duration = 0.35;
+                baseScale = 1.05;
+                duration = 0.4;
             } else if (type === "BAD") {
-                baseScale = 0.85;
-                duration = 0.30;
+                baseScale = 0.9;
+                duration = 0.35;
                 particles = 10;
             } else {
-                baseScale = 0.7;
-                duration = 0.25;
+                baseScale = 0.8;
+                duration = 0.3;
                 particles = 8;
             }
 
@@ -1527,7 +1474,7 @@
             for (let i = 0; i < particles; i++) {
                 particleList.push({
                     angle: (i / particles) * Math.PI * 2 + Math.random() * 0.3,
-                    speed: 80 + Math.random() * 120,
+                    speed: 90 + Math.random() * 130,
                     radius: 4 + Math.random() * 4,
                 });
             }
@@ -1559,7 +1506,7 @@
 
                 for (let rIndex = 0; rIndex < e.rings; rIndex++) {
                     const ringT = t * (0.7 + rIndex * 0.2);
-                    const radius = (16 + ringT * 90) * e.scale;
+                    const radius = (16 + ringT * 100) * e.scale;
                     ctx.beginPath();
                     ctx.arc(e.x, e.y, radius, 0, Math.PI * 2);
                     ctx.strokeStyle = `rgba(${e.color}, ${alpha * (0.6 - rIndex * 0.15)})`;
@@ -1596,7 +1543,7 @@
             }
 
             const t = elapsed / duration;
-            const scale = 1 + 0.6 * (1 - t);
+            const scale = 1 + 0.7 * (1 - t);
             const opacity = 1 - t;
 
             judgementTextEl.textContent = gameState.lastJudgement;
@@ -1614,8 +1561,42 @@
 
         function drawBackground(deltaTime) {
             ctx.save();
-            ctx.fillStyle = "rgba(2,6,23,0.9)";
+            ctx.fillStyle = "rgba(2,6,23,0.95)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const maxR = Math.hypot(cx, cy);
+            const radialGrad = ctx.createRadialGradient(
+                cx, cy, 0,
+                cx, cy, maxR
+            );
+            radialGrad.addColorStop(0, "rgba(30,64,175,0.35)");
+            radialGrad.addColorStop(0.4, "rgba(15,23,42,0.85)");
+            radialGrad.addColorStop(1, "rgba(2,6,23,1)");
+            ctx.fillStyle = radialGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (const ray of gameState.bgRays) {
+                ray.angle += ray.speed * deltaTime;
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(ray.angle);
+                const rayGrad = ctx.createLinearGradient(0, 0, maxR, 0);
+                rayGrad.addColorStop(0, `rgba(59,130,246,${ray.alpha})`);
+                rayGrad.addColorStop(0.4, `rgba(236,72,153,${ray.alpha * 0.8})`);
+                rayGrad.addColorStop(1, "rgba(15,23,42,0)");
+                ctx.fillStyle = rayGrad;
+                const width = maxR * ray.width;
+                ctx.beginPath();
+                ctx.moveTo(0, -width);
+                ctx.lineTo(maxR, -width * 0.3);
+                ctx.lineTo(maxR, width * 0.3);
+                ctx.lineTo(0, width);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
 
             for (const c of gameState.bgCircles) {
                 c.y -= c.speed * deltaTime * 60;
@@ -1628,6 +1609,7 @@
                 ctx.fillStyle = `rgba(148,163,184,${c.alpha})`;
                 ctx.fill();
             }
+
             ctx.restore();
         }
 
@@ -1652,8 +1634,8 @@
 
             const isCurrentPath = (note === targetNote || prev === targetNote);
             ctx.strokeStyle = isCurrentPath
-                ? "rgba(236,252,203,0.7)"
-                : "rgba(148,163,184,0.25)";
+                ? "rgba(236,252,203,0.8)"
+                : "rgba(148,163,184,0.3)";
             ctx.lineWidth = isCurrentPath ? 3 : 2;
             ctx.setLineDash(isCurrentPath ? [10, 6] : [3, 10]);
             ctx.stroke();
@@ -1800,16 +1782,16 @@
             );
             if (note.isGold) {
                 gradient.addColorStop(0, "rgba(255, 249, 196,1.0)");
-                gradient.addColorStop(0.35, "rgba(253, 224, 71,0.95)");
+                gradient.addColorStop(0.35, "rgba(253, 224, 71,0.96)");
                 gradient.addColorStop(1, "rgba(245, 158, 11,0.9)");
             } else if (isTarget) {
                 gradient.addColorStop(0, "rgba(248,250,252,1.0)");
-                gradient.addColorStop(0.35, "rgba(191,219,254,0.95)");
+                gradient.addColorStop(0.35, "rgba(191,219,254,0.96)");
                 gradient.addColorStop(1, "rgba(129,140,248,0.9)");
             } else {
                 gradient.addColorStop(0, "rgba(248,250,252,0.95)");
                 gradient.addColorStop(0.4, "rgba(129,140,248,0.9)");
-                gradient.addColorStop(1, "rgba(236,72,153,0.7)");
+                gradient.addColorStop(1, "rgba(236,72,153,0.75)");
             }
 
             ctx.beginPath();
@@ -1839,78 +1821,66 @@
             ctx.restore();
         }
 
-        // 导出谱面
-        function exportChart() {
-            if (!gameState.notes || !gameState.notes.length) return;
-
-            const data = {
-                version: 2,
-                difficulty: getDifficulty(),
-                approachTime: gameState.approachTime,
-                beatPeriod: gameState.lastBeatPeriod || 0.5,
-                notes: gameState.notes.map((n) => ({
-                    t: n.targetTime,
-                    x: +(n.x / canvas.width).toFixed(4),
-                    y: +(n.y / canvas.height).toFixed(4),
-                    r: +(n.radius / Math.min(canvas.width, canvas.height)).toFixed(4),
-                    gold: !!n.isGold,
-                    weight: n.weight || 1
-                })),
-            };
-
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `chart_${getDifficulty()}.json`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-        }
-        exportChartBtn.addEventListener("click", exportChart);
-
-        // 导出成绩图
         function exportScoreImage() {
             const total = gameState.totalNotes || 1;
             if (!total) return;
 
+            const songName = gameState.currentSongName || "Unknown Track";
+
             const canvasOut = document.createElement("canvas");
-            canvasOut.width = 800;
-            canvasOut.height = 450;
+            canvasOut.width = 900;
+            canvasOut.height = 500;
             const c = canvasOut.getContext("2d");
 
-            const grad = c.createLinearGradient(0, 0, 800, 450);
-            grad.addColorStop(0, "#0f172a");
+            const grad = c.createLinearGradient(0, 0, 900, 500);
+            grad.addColorStop(0, "#020617");
+            grad.addColorStop(0.35, "#1d2338");
             grad.addColorStop(1, "#4f46e5");
             c.fillStyle = grad;
-            c.fillRect(0, 0, 800, 450);
+            c.fillRect(0, 0, 900, 500);
+
+            const cx = 900 / 2;
+            const cy = 500 / 2;
+            const halo = c.createRadialGradient(cx, cy, 0, cx, cy, 260);
+            halo.addColorStop(0, "rgba(248,250,252,0.18)");
+            halo.addColorStop(0.4, "rgba(56,189,248,0.06)");
+            halo.addColorStop(1, "rgba(15,23,42,0)");
+            c.fillStyle = halo;
+            c.beginPath();
+            c.arc(cx, cy, 260, 0, Math.PI * 2);
+            c.fill();
 
             c.fillStyle = "#e5e7eb";
             c.font = "20px system-ui";
             c.fillText("图形节奏音乐游戏 - 成绩单", 40, 60);
 
-            c.font = "80px system-ui";
+            c.font = "24px system-ui";
             c.fillStyle = "#fbbf24";
-            c.fillText(gameState.currentGrade, 40, 160);
+            c.fillText("乐曲：" + songName, 40, 95);
 
-            c.font = "26px system-ui";
-            c.fillStyle = "#e5e7eb";
-            c.fillText("Difficulty: " + getDifficulty(), 40, 200);
+            c.font = "78px system-ui";
+            c.fillStyle = "#facc15";
+            c.fillText(gameState.currentGrade, 40, 180);
 
             c.font = "40px system-ui";
             c.fillStyle = "#f9fafb";
-            c.fillText(gameState.currentScorePercent.toFixed(4) + "%", 40, 250);
+            c.fillText(gameState.currentScorePercent.toFixed(4) + "%", 40, 230);
 
             c.font = "22px system-ui";
             c.fillStyle = "#e5e7eb";
-            const lineY = 290;
+            const lineY = 280;
             c.fillText(`Max Combo: ${gameState.maxCombo}`, 40, lineY);
             c.fillText(`PERFECT: ${gameState.perfectCount}`, 40, lineY + 32);
             c.fillText(`GOOD: ${gameState.goodCount}`, 40, lineY + 64);
-            c.fillText(`BAD: ${gameState.badCount}`, 270, lineY + 32);
-            c.fillText(`MISS: ${gameState.missCount}`, 270, lineY + 64);
-            c.fillText(`Notes: ${gameState.totalNotes}`, 270, lineY);
+            c.fillText(`BAD: ${gameState.badCount}`, 320, lineY + 32);
+            c.fillText(`MISS: ${gameState.missCount}`, 320, lineY + 64);
+            c.fillText(`Notes: ${gameState.totalNotes}`, 320, lineY);
+
+            if (gameState.buffer && gameState.notes.length) {
+                const duration = gameState.buffer.duration || 1;
+                const npm = gameState.notes.length / (duration / 60);
+                c.fillText(`NPM: ${npm.toFixed(1)}`, 320, lineY + 96);
+            }
 
             if (gameState.hitOffsets && gameState.hitOffsets.length) {
                 const arr = gameState.hitOffsets;
@@ -1923,17 +1893,21 @@
                 c.fillText(text, 40, 380);
             }
 
+            c.font = "16px system-ui";
+            c.fillStyle = "rgba(226, 232, 240, 0.75)";
+            c.fillText("Generated in browser – share this成绩图给朋友吧！", 40, 430);
+
             const url = canvasOut.toDataURL("image/png");
             const a = document.createElement("a");
+            const safeName = songName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, "_");
             a.href = url;
-            a.download = `score_${getDifficulty()}.png`;
+            a.download = `score_${safeName || "track"}.png`;
             document.body.appendChild(a);
             a.click();
             a.remove();
         }
         exportScoreBtn.addEventListener("click", exportScoreImage);
 
-        // 主循环
         let lastFrameTime = performance.now();
         function loop() {
             requestAnimationFrame(loop);
@@ -1979,9 +1953,8 @@
                 gameState.isPlaying = false;
                 exitGameplayScreen();
                 exitFullscreen();
-                infoText.textContent = "本曲结束。可重新点击“开始游戏”再玩一次，或导出谱面 / 成绩图。";
+                infoText.textContent = "本曲结束。可重新点击“开始游戏”再玩一次，或导出成绩图分享。";
                 exportScoreBtn.disabled = false;
-                exportChartBtn.disabled = false;
             }
         }
         loop();
