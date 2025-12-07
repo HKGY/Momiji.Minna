@@ -1,4 +1,3 @@
-// js/dom.js
 export const canvas          = document.getElementById("gameCanvas");
 export const ctx             = canvas.getContext("2d");
 
@@ -10,6 +9,7 @@ export const exportScoreBtn  = document.getElementById("exportScoreBtn");
 export const songTitleEl     = document.getElementById("songTitle");
 export const infoTextEl      = document.getElementById("infoText");
 export const progressFill    = document.getElementById("progressFill");
+export const gameContainer   = document.getElementById("gameContainer");
 
 export const scorePercentEl  = document.getElementById("scorePercent");
 export const scoreGradeEl    = document.getElementById("scoreGrade");

@@ -1,405 +1,511 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>CelestialDX - 图形节奏音乐游戏</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #020617, #000);
-      color: #e5e7eb;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 16px;
-      gap: 10px;
-    }
-    h1 {
-      font-size: 26px;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      background: linear-gradient(120deg, #fb923c, #ec4899, #4f46e5, #22d3ee);
-      -webkit-background-clip: text;
-      color: transparent;
-      text-align: center;
-      margin-bottom: 4px;
-    }
-    h2 {
-      font-size: 11px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      opacity: .7;
-      text-align: center;
-      margin-bottom: 8px;
-    }
-    .panel {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      justify-content: center;
-      padding: 8px 14px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.9);
-      box-shadow: 0 12px 40px rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(10px);
-      font-size: 13px;
-    }
-    .panel label { display: flex; align-items: center; gap: 4px; }
-    input[type="file"] { font-size: 13px; max-width: 220px; }
-    select {
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      background: rgba(15, 23, 42, 0.95);
-      color: #e5e7eb;
-      padding: 4px 10px;
-      font-size: 13px;
-      outline: none;
-    }
-    button {
-      border: none;
-      padding: 8px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      cursor: pointer;
-      background: linear-gradient(135deg, #4f46e5, #ec4899);
-      color: white;
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.8);
-      transition: transform .1s ease, box-shadow .1s ease, filter .1s ease;
-    }
-    button:disabled {
-      opacity: 0.45;
-      cursor: default;
-      box-shadow: none;
-      filter: grayscale(.3);
-    }
-    button:not(:disabled):hover {
-      transform: translateY(-1px) scale(1.03);
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.9);
-      filter: brightness(1.05);
-    }
-    #songTitle {
-      font-size: 13px;
-      opacity: .85;
-      text-align: center;
-    }
-    .info {
-      font-size: 12px;
-      opacity: .7;
-      text-align: center;
-      line-height: 1.6;
-    }
-    .stats {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 12px;
-      font-size: 13px;
-    }
-    .stats span.label { opacity: .7; margin-right: 4px; }
-    .judge-stats {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      font-size: 12px;
-    }
-    .judge-stats span { opacity: .85; }
-    .perfect { color: #fef9c3; }
-    .good    { color: #bbf7d0; }
-    .bad     { color: #fed7aa; }
-    .miss    { color: #fecaca; }
-    #offsetStats {
-      font-size: 12px;
-      opacity: .8;
-      text-align: center;
-      min-height: 1.4em;
-    }
-    .game-wrapper { position: relative; }
-    #gameCanvas {
-      width: 900px;
-      max-width: 100vw;
-      height: auto;
-      border-radius: 24px;
-      background: #020617;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
-      display: block;
-    }
-    .center-hud {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      text-shadow: 0 0 16px rgba(0,0,0,0.9);
-      font-variant-numeric: tabular-nums;
-    }
-    #centerScore {
-      font-size: 26px;
-      margin-bottom: 4px;
-    }
-    #centerCombo {
-      font-size: 16px;
-      margin-bottom: 6px;
-    }
-    #judgementText {
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: .35em;
-      min-height: 1.4em;
-    }
-    .progress-bar {
-      position: absolute;
-      left: 50%;
-      top: 10px;
-      transform: translateX(-50%);
-      width: min(70vw, 640px);
-      height: 6px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.9);
-      overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(148, 163, 184, .6);
-    }
-    .progress-fill {
-      width: 100%;
-      height: 100%;
-      transform-origin: left center;
-      transform: scaleX(0);
-      background: linear-gradient(90deg, #22d3ee, #a855f7, #fb923c);
-    }
-    .footer {
-      margin-top: 4px;
-      font-size: 11px;
-      opacity: .5;
-      text-align: center;
-    }
+    <meta charset="UTF-8" />
+    <title>CelestialDX - 图形节奏音乐游戏</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    .pause-overlay {
-      position: absolute;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(14px);
-      z-index: 20;
-    }
-    .pause-panel {
-      background: rgba(15, 23, 42, 0.98);
-      border-radius: 24px;
-      padding: 20px 28px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
-      text-align: center;
-      min-width: 260px;
-    }
-    .pause-title {
-      font-size: 18px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .pause-sub {
-      font-size: 12px;
-      opacity: 0.7;
-      margin-bottom: 16px;
-    }
-    .pause-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-    }
-    .pause-buttons button {
-      min-width: 90px;
-    }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #020617, #000);
+            color: #e5e7eb;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+            gap: 10px;
+        }
 
-    .result-overlay {
-      position: absolute;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(15, 23, 42, 0.92);
-      backdrop-filter: blur(18px);
-      z-index: 30;
-    }
-    .result-panel {
-      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 1));
-      border-radius: 26px;
-      padding: 24px 30px;
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.95);
-      min-width: min(480px, 90vw);
-      color: #e5e7eb;
-    }
-    .result-title {
-      font-size: 13px;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      opacity: 0.75;
-      margin-bottom: 8px;
-    }
-    .result-song {
-      font-size: 14px;
-      opacity: 0.9;
-      margin-bottom: 10px;
-    }
-    .result-main-line {
-      display: flex;
-      align-items: baseline;
-      gap: 16px;
-      margin-bottom: 4px;
-    }
-    .result-grade {
-      font-size: 52px;
-      font-weight: 800;
-      letter-spacing: 0.16em;
-    }
-    .result-score {
-      font-size: 26px;
-      font-weight: 600;
-    }
-    .result-clear {
-      font-size: 18px;
-      margin-top: 4px;
-    }
-    .result-subtitle-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      opacity: 0.9;
-      margin-bottom: 10px;
-    }
-    .result-stats {
-      font-size: 13px;
-      line-height: 1.6;
-      margin-bottom: 14px;
-    }
-    .result-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-    }
-    .result-buttons button {
-      min-width: 90px;
-    }
-  </style>
+        h1 {
+            font-size: 26px;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            background: linear-gradient(120deg, #fb923c, #ec4899, #4f46e5, #22d3ee);
+            -webkit-background-clip: text;
+            color: transparent;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        h2 {
+            font-size: 11px;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            opacity: .7;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 12px 40px rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            font-size: 13px;
+        }
+
+        .panel label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        input[type="file"] {
+            font-size: 13px;
+            max-width: 220px;
+        }
+
+        select {
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.7);
+            background: rgba(15, 23, 42, 0.95);
+            color: #e5e7eb;
+            padding: 4px 10px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        button {
+            border: none;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #4f46e5, #ec4899);
+            color: white;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.8);
+            transition: transform .1s ease, box-shadow .1s ease, filter .1s ease;
+        }
+
+        button:disabled {
+            opacity: 0.45;
+            cursor: default;
+            box-shadow: none;
+            filter: grayscale(.3);
+        }
+
+        button:not(:disabled):hover {
+            transform: translateY(-1px) scale(1.03);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.9);
+            filter: brightness(1.05);
+        }
+
+        #songTitle {
+            font-size: 13px;
+            opacity: .85;
+            text-align: center;
+        }
+
+        .info {
+            font-size: 12px;
+            opacity: .7;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+        .stats span.label {
+            opacity: .7;
+            margin-right: 4px;
+        }
+
+        .judge-stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .judge-stats span {
+            opacity: .85;
+        }
+
+        .perfect {
+            color: #fef9c3;
+        }
+
+        .good {
+            color: #bbf7d0;
+        }
+
+        .bad {
+            color: #fed7aa;
+        }
+
+        .miss {
+            color: #fecaca;
+        }
+
+        #offsetStats {
+            font-size: 12px;
+            opacity: .8;
+            text-align: center;
+            min-height: 1.4em;
+        }
+
+        .game-wrapper {
+            position: relative;
+        }
+
+        #gameCanvas {
+            width: 900px;
+            max-width: 100vw;
+            height: auto;
+            border-radius: 24px;
+            background: #020617;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
+            display: block;
+        }
+
+        .center-hud {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            text-shadow: 0 0 16px rgba(0, 0, 0, 0.9);
+            font-variant-numeric: tabular-nums;
+        }
+
+        #centerScore {
+            font-size: 26px;
+            margin-bottom: 4px;
+        }
+
+        #centerCombo {
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        #judgementText {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: .35em;
+            min-height: 1.4em;
+        }
+
+        .progress-bar {
+            position: absolute;
+            left: 50%;
+            top: 10px;
+            transform: translateX(-50%);
+            width: min(70vw, 640px);
+            height: 6px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(148, 163, 184, .6);
+        }
+
+        .progress-fill {
+            width: 100%;
+            height: 100%;
+            transform-origin: left center;
+            transform: scaleX(0);
+            background: linear-gradient(90deg, #22d3ee, #a855f7, #fb923c);
+        }
+
+        .footer {
+            margin-top: 4px;
+            font-size: 11px;
+            opacity: .5;
+            text-align: center;
+        }
+
+        .pause-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(14px);
+            z-index: 20;
+        }
+
+        .pause-panel {
+            background: rgba(15, 23, 42, 0.98);
+            border-radius: 24px;
+            padding: 20px 28px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+            text-align: center;
+            min-width: 260px;
+        }
+
+        .pause-title {
+            font-size: 18px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .pause-sub {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 16px;
+        }
+
+        .pause-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .pause-buttons button {
+            min-width: 90px;
+        }
+
+        .result-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(18px);
+            z-index: 30;
+        }
+
+        .result-panel {
+            background: radial-gradient(circle at top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 1));
+            border-radius: 26px;
+            padding: 24px 30px;
+            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.95);
+            min-width: min(480px, 90vw);
+            color: #e5e7eb;
+        }
+
+        .result-title {
+            font-size: 13px;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            opacity: 0.75;
+            margin-bottom: 8px;
+        }
+
+        .result-song {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .result-main-line {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 4px;
+        }
+
+        .result-grade {
+            font-size: 52px;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+        }
+
+        .result-score {
+            font-size: 26px;
+            font-weight: 600;
+        }
+
+        .result-clear {
+            font-size: 18px;
+            margin-top: 4px;
+        }
+
+        .result-subtitle-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .result-stats {
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+
+        .result-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .result-buttons button {
+            min-width: 90px;
+        }
+
+        /* === 全屏游戏时的附加样式 === */
+        body.game-fullscreen {
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        /* gameContainer 进入整屏时铺满窗口 */
+        #gameContainer.fullscreen-play {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 画布跟着铺满 */
+        #gameContainer.fullscreen-play canvas {
+            width: 100vw;
+            height: 100vh;
+            max-width: 100vw;
+            max-height: 100vh;
+            object-fit: contain;
+        }
+    </style>
 </head>
+
 <body>
-  <h1>CELESTIALDX</h1>
-  <h2>GRAPHICAL RHYTHM ENGINE</h2>
+    <h1>CELESTIALDX</h1>
+    <h2>GRAPHICAL RHYTHM ENGINE</h2>
 
-  <div class="panel">
-    <label>
-      选择 MP3：
-      <input type="file" id="fileInput" accept="audio/mpeg,audio/mp3,audio/*" />
-    </label>
-    <label>
-      难度：
-      <select id="difficultySelect">
-        <option value="classic">Classic (≈45 NPM)</option>
-        <option value="expert">Expert (≈75 NPM)</option>
-        <option value="master">Master (≈110 NPM)</option>
-        <option value="legendary">Legendary (≈150 NPM)</option>
-      </select>
-    </label>
-    <label>
-      模式：
-      <select id="gameModeSelect">
-        <option value="starlight">星光模式（判定环）</option>
-        <option value="starsea">星海模式（飞行星星）</option>
-      </select>
-    </label>
-    <button id="startBtn" disabled>开始游戏 / 按任意键开始</button>
-    <button id="exportScoreBtn" disabled>导出成绩图</button>
-  </div>
-
-  <div id="songTitle">当前乐曲：-</div>
-  <div class="info" id="infoText">
-    选择一首 MP3，程序会通过能量峰值分析自动生成节奏。<br />
-    星光模式：判定环收缩与中心圆重合时击打。<br />
-    星海模式：星星从画面外飞来与随机判定框重合时击打。<br />
-    游戏中：按 <b>任意键（除 Esc）</b> 或点击画面判定，按 <b>Esc</b> 暂停/继续。
-  </div>
-
-  <div class="stats">
-    <div><span class="label">Score</span><span class="value" id="scorePercent">0.0000%</span></div>
-    <div><span class="label">Grade</span><span class="value" id="scoreGrade">D</span></div>
-    <div><span class="label">Combo</span><span class="value" id="combo">0</span></div>
-    <div><span class="label">Max Combo</span><span class="value" id="maxCombo">0</span></div>
-    <div><span class="label">Notes</span><span class="value" id="noteCount">0</span></div>
-    <div><span class="label">NPM</span><span class="value" id="npm">0.0</span></div>
-  </div>
-
-  <div class="judge-stats">
-    <span class="perfect">PERFECT: <span id="countPerfect">0</span></span>
-    <span class="good">GOOD: <span id="countGood">0</span></span>
-    <span class="bad">BAD: <span id="countBad">0</span></span>
-    <span class="miss">MISS: <span id="countMiss">0</span></span>
-  </div>
-
-  <div id="offsetStats"></div>
-
-  <div class="game-wrapper">
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-    <canvas id="gameCanvas" width="900" height="540"></canvas>
-    <div class="center-hud">
-      <div id="centerScore">0.0000% [D]</div>
-      <div id="centerCombo">Combo 0</div>
-      <div id="judgementText"></div>
+    <div class="panel">
+        <label>
+            选择 MP3：
+            <input type="file" id="fileInput" accept="audio/mpeg,audio/mp3,audio/*" />
+        </label>
+        <label>
+            难度：
+            <select id="difficultySelect">
+                <option value="classic">Classic (≈45 NPM)</option>
+                <option value="expert">Expert (≈75 NPM)</option>
+                <option value="master">Master (≈110 NPM)</option>
+                <option value="legendary">Legendary (≈150 NPM)</option>
+            </select>
+        </label>
+        <label>
+            模式：
+            <select id="gameModeSelect">
+                <option value="starlight">星光模式（判定环）</option>
+                <option value="starsea" selected>星海模式（飞行星星）</option>
+            </select>
+        </label>
+        <button id="startBtn" disabled>开始游戏 / 按任意键开始</button>
+        <button id="exportScoreBtn" disabled>导出成绩图</button>
     </div>
 
-    <div id="pauseOverlay" class="pause-overlay">
-      <div class="pause-panel">
-        <div class="pause-title">PAUSED</div>
-        <div class="pause-sub" id="pauseSongTitle">当前乐曲：-</div>
-        <div class="pause-buttons">
-          <button id="resumeBtn">继续</button>
-          <button id="retryBtn">重试</button>
-          <button id="quitBtn">退出</button>
-        </div>
-      </div>
+    <div id="songTitle">当前乐曲：-</div>
+    <div class="info" id="infoText">
+        选择一首 MP3，程序会通过能量峰值分析自动生成节奏。<br />
+        星光模式：判定环收缩与中心圆重合时击打。<br />
+        星海模式：星星从画面外飞来与随机判定框重合时击打。<br />
+        游戏中：按 <b>任意键（除 Esc）</b> 或点击画面判定，按 <b>Esc</b> 暂停/继续。
     </div>
 
-    <div id="resultOverlay" class="result-overlay">
-      <div class="result-panel">
-        <div class="result-title">RESULT</div>
-        <div class="result-song" id="resultSongTitle">乐曲：-</div>
-
-        <div class="result-main-line">
-          <div id="resultGrade" class="result-grade">D</div>
-          <div id="resultScore" class="result-score">0.0000%</div>
-        </div>
-        <div id="resultClear" class="result-clear"></div>
-
-        <div class="result-subtitle-row">
-          <div id="resultDifficulty">难度：-</div>
-          <div id="resultNpm">密度：0.0 NPM</div>
-        </div>
-
-        <div id="resultStats" class="result-stats">
-          Max Combo: 0<br />
-          PERFECT: 0 · GOOD: 0 · BAD: 0 · MISS: 0 · Notes: 0
-        </div>
-
-        <div class="result-buttons">
-          <button id="resultExportBtn">导出成绩图</button>
-          <button id="resultRetryBtn">重试</button>
-          <button id="resultExitBtn">返回</button>
-        </div>
-      </div>
+    <div class="stats">
+        <div><span class="label">Score</span><span class="value" id="scorePercent">0.0000%</span></div>
+        <div><span class="label">Grade</span><span class="value" id="scoreGrade">D</span></div>
+        <div><span class="label">Combo</span><span class="value" id="combo">0</span></div>
+        <div><span class="label">Max Combo</span><span class="value" id="maxCombo">0</span></div>
+        <div><span class="label">Notes</span><span class="value" id="noteCount">0</span></div>
+        <div><span class="label">NPM</span><span class="value" id="npm">0.0</span></div>
     </div>
-  </div>
 
-  <div class="footer">
-    背景请放置 <b>celes.png</b> 作为看板娘立绘。当前支持：星光（判定环）与星海（飞行星星）两种模式。
-  </div>
+    <div class="judge-stats">
+        <span class="perfect">PERFECT: <span id="countPerfect">0</span></span>
+        <span class="good">GOOD: <span id="countGood">0</span></span>
+        <span class="bad">BAD: <span id="countBad">0</span></span>
+        <span class="miss">MISS: <span id="countMiss">0</span></span>
+    </div>
 
-  <script type="module" src="js/main.js"></script>
+    <div id="offsetStats"></div>
+
+    <div id="gameContainer" class="game-wrapper">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <canvas id="gameCanvas" width="900" height="540"></canvas>
+        <div class="center-hud">
+            <div id="centerScore">0.0000% [D]</div>
+            <div id="centerCombo">Combo 0</div>
+            <div id="judgementText"></div>
+        </div>
+
+        <div id="pauseOverlay" class="pause-overlay">
+            <div class="pause-panel">
+                <div class="pause-title">PAUSED</div>
+                <div class="pause-sub" id="pauseSongTitle">当前乐曲：-</div>
+                <div class="pause-buttons">
+                    <button id="resumeBtn">继续</button>
+                    <button id="retryBtn">重试</button>
+                    <button id="quitBtn">退出</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultOverlay" class="result-overlay">
+            <div class="result-panel">
+                <div class="result-title">RESULT</div>
+                <div class="result-song" id="resultSongTitle">乐曲：-</div>
+
+                <div class="result-main-line">
+                    <div id="resultGrade" class="result-grade">D</div>
+                    <div id="resultScore" class="result-score">0.0000%</div>
+                </div>
+                <div id="resultClear" class="result-clear"></div>
+
+                <div class="result-subtitle-row">
+                    <div id="resultDifficulty">难度：-</div>
+                    <div id="resultNpm">密度：0.0 NPM</div>
+                </div>
+
+                <div id="resultStats" class="result-stats">
+                    Max Combo: 0<br />
+                    PERFECT: 0 · GOOD: 0 · BAD: 0 · MISS: 0 · Notes: 0
+                </div>
+
+                <div class="result-buttons">
+                    <button id="resultExportBtn">导出成绩图</button>
+                    <button id="resultRetryBtn">重试</button>
+                    <button id="resultExitBtn">返回</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        背景请放置 <b>celes.png</b> 作为看板娘立绘。当前支持：星光（判定环）与星海（飞行星星）两种模式。
+    </div>
+
+    <script type="module" src="js/main.js"></script>
 </body>
+
 </html>

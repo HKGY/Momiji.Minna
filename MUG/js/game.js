@@ -1,4 +1,3 @@
-// js/game.js
 import { state, JUDGE } from "./state.js";
 import { resetScore, updateScoreUI } from "./score.js";
 import { gameModeSelect, canvas } from "./dom.js";
@@ -137,6 +136,14 @@ export function applyJudgement(note, result, offset, hitX, hitY) {
       if (state.gameMode === "starsea" && note && typeof note.targetX === "number") {
         x = note.targetX;
         y = note.targetY;
+      } else if (state.gameMode === "starfall" && note && typeof note.lane === "number") {
+        const laneCount = 4;
+        const lane = ((note.lane % laneCount) + laneCount) % laneCount;
+        const trackWidth = Math.min(canvas.width * 0.6, 420);
+        const laneWidth = trackWidth / laneCount;
+        const left = (canvas.width - trackWidth) / 2;
+        x = left + laneWidth * (lane + 0.5);
+        y = canvas.height * 0.8;
       } else {
         x = canvas.width / 2;
         y = canvas.height / 2;
@@ -177,6 +184,14 @@ export function handleHit() {
   if (state.gameMode === "starsea" && typeof best.targetX === "number") {
     hitX = best.targetX;
     hitY = best.targetY;
+  } else if (state.gameMode === "starfall" && typeof best.lane === "number") {
+    const laneCount = 4;
+    const lane = ((best.lane % laneCount) + laneCount) % laneCount;
+    const trackWidth = Math.min(canvas.width * 0.6, 420);
+    const laneWidth = trackWidth / laneCount;
+    const left = (canvas.width - trackWidth) / 2;
+    hitX = left + laneWidth * (lane + 0.5);
+    hitY = canvas.height * 0.8;
   } else {
     hitX = canvas.width / 2;
     hitY = canvas.height / 2;

@@ -1,4 +1,3 @@
-// js/main.js
 import { state } from "./state.js";
 import {
   canvas,
@@ -11,7 +10,10 @@ import {
 } from "./dom.js";
 
 import { resetScore } from "./score.js";
-import { buildChartFromBuffer } from "./chart.js";
+import {
+  buildChartFromBuffer,
+  rebuildChartForCurrentMode
+} from "./chart.js";
 import {
   startGame,
   endGame,
@@ -66,7 +68,8 @@ fileInput.addEventListener("change", async (e) => {
     state.audioCtx = new AC();
   }
 
-  const baseName = file.name.replace(/\.[^/.]+$/, "") || "Unknown Track";
+  const baseName =
+    file.name.replace(/\.[^/.]+$/, "") || "Unknown Track";
   state.currentSongName = baseName;
   songTitleEl.textContent = "当前乐曲：" + baseName;
 
@@ -75,6 +78,7 @@ fileInput.addEventListener("change", async (e) => {
     const audioBuffer = await state.audioCtx.decodeAudioData(buf);
     state.buffer = audioBuffer;
 
+    // 重新做一次原始谱面分析+按当前模式转换
     buildChartFromBuffer();
     startBtn.disabled = !state.notes.length;
   } catch (err) {
@@ -83,7 +87,7 @@ fileInput.addEventListener("change", async (e) => {
   }
 });
 
-// 难度变化
+// 难度变化 -> 会改变原始谱面的“密度”，需要重建 rawTimes
 difficultySelect.addEventListener("change", () => {
   state.difficulty = difficultySelect.value;
   if (state.buffer) {
@@ -91,11 +95,16 @@ difficultySelect.addEventListener("change", () => {
   }
 });
 
-// 模式变化
+// 模式变化 -> 共用同一份 rawTimes，只重新按模式转换 notes
 if (gameModeSelect) {
-  state.gameMode = gameModeSelect.value || "starlight";
+  // 默认改为星海模式：下拉框初始值是 starsea，fallback 也用 starsea
+  state.gameMode = gameModeSelect.value || "starsea";
   gameModeSelect.addEventListener("change", () => {
-    state.gameMode = gameModeSelect.value || "starlight";
+    state.gameMode = gameModeSelect.value || "starsea";
+
+    // 使用已有的 state.rawTimes，按当前模式重建 notes
+    rebuildChartForCurrentMode();
+
     if (state.gameMode === "starsea") {
       markStarseaChartDirty();
     }
@@ -106,7 +115,9 @@ if (gameModeSelect) {
 startBtn.addEventListener("click", async () => {
   if (!state.buffer || !state.audioCtx || !state.notes.length) return;
   if (state.audioCtx.state === "suspended") {
-    try { await state.audioCtx.resume(); } catch {}
+    try {
+      await state.audioCtx.resume();
+    } catch {}
   }
   startGame();
 });
@@ -122,13 +133,25 @@ window.addEventListener("keydown", async (e) => {
     return;
   }
 
-  const ignore = ["Shift", "Control", "Alt", "Meta", "CapsLock", "Tab"];
+  const ignore = [
+    "Shift",
+    "Control",
+    "Alt",
+    "Meta",
+    "CapsLock",
+    "Tab"
+  ];
   if (ignore.includes(e.key)) return;
 
-  if ((state.mode === "idle" || state.mode === "ended") &&
-      state.buffer && !startBtn.disabled) {
+  if (
+    (state.mode === "idle" || state.mode === "ended") &&
+    state.buffer &&
+    !startBtn.disabled
+  ) {
     if (state.audioCtx && state.audioCtx.state === "suspended") {
-      try { await state.audioCtx.resume(); } catch {}
+      try {
+        await state.audioCtx.resume();
+      } catch {}
     }
     startGame();
     return;
@@ -144,7 +167,9 @@ window.addEventListener("keydown", async (e) => {
 canvas.addEventListener("pointerdown", async () => {
   if (state.mode !== "playing") return;
   if (state.audioCtx && state.audioCtx.state === "suspended") {
-    try { await state.audioCtx.resume(); } catch {}
+    try {
+      await state.audioCtx.resume();
+    } catch {}
   }
   handleHit();
 });
@@ -152,15 +177,15 @@ canvas.addEventListener("pointerdown", async () => {
 // 初始化扩展模块
 initPauseMenu({
   onResume: resumeGame,
-  onRetry:  retryGame,
-  onQuit:   quitGame
+  onRetry: retryGame,
+  onQuit: quitGame
 });
 
 initAutoDemo();
 
 initResultExport({
   onRetry: retryGame,
-  onExit:  quitGame
+  onExit: quitGame
 });
 
 // 顶部导出按钮

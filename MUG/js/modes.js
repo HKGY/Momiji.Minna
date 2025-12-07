@@ -1,4 +1,3 @@
-// js/modes.js
 export const GAME_MODES = {
   starlight: {
     id: "starlight",
@@ -8,6 +7,11 @@ export const GAME_MODES = {
   starsea: {
     id: "starsea",
     name: "星海模式（飞行星星）",
+    implemented: true
+  },
+  starfall: {
+    id: "starfall",
+    name: "星陨模式（4K 下落）",
     implemented: true
   }
 };

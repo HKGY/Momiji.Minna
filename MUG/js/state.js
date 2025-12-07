@@ -1,4 +1,3 @@
-// js/state.js
 export const DIFFICULTY_CONFIG = {
   classic:   { label: "Classic",   targetNpm: 45 },
   expert:    { label: "Expert",    targetNpm: 75 },
@@ -24,8 +23,8 @@ export const state = {
 
   difficulty: "classic",
 
-  // starlight（星光判定环） / starsea（星海星星）
-  gameMode: "starlight",
+  // 默认改为星海模式：starsea（飞行星星）
+  gameMode: "starsea",
 
   notes: [],             // { time, judged, isGold, offset, ...mode-specific extra }
   totalNotes: 0,
@@ -49,7 +48,6 @@ export const state = {
   approachTime: 1.0,
 
   currentSongName: "-",
-
 
   // 看板娘背景
   bgImage: null,         // Image 实例
