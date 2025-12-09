@@ -1,7 +1,5 @@
-// 星海模式：圆角星音符从画面外飞来，撞上随机判定区
-// 仅当前音符 & 判定区有“音符→判定区”引导线；
-// 同时存在多个判定区时，仅“当前 + 下一判定区”之间有连线；
-// 判定区圆环在“上一个判定区判定完”后才开始收缩。
+// js/modes/starsea.js
+// 星海模式：圆角星音符从画面外飞来，撞上绕中心顺时针旋转的一圈判定区
 
 import { state, JUDGE } from "../state.js";
 import { canvas } from "../dom.js";
@@ -10,18 +8,14 @@ import { applyJudgement } from "../game.js";
 // 飞行时间倍率（>1 表示飞行更慢）
 const STAR_TRAVEL_TIME_SCALE = 1.8;
 
-// 判定区排列约束
+// 判定区距离画面边缘的安全距离
 const TARGET_MARGIN = 80;
-const TARGET_MIN_DIST = 120;
-const TARGET_MAX_DIST = 260;
-// 允许出现“几乎一条直线”的 pattern，因此角度下限放宽到约 8°
-const TARGET_MIN_ANGLE_RAD = (8 * Math.PI) / 180;
 
 let layoutDirty = true;
 let bgInited = false;
 const bgStars = [];
 
-/** 重新生成判定区布局用（切歌或重生谱面时调用） */
+/** 外部调用：切歌或重建谱面时标记布局为失效，下次渲染时重新生成 */
 export function markStarseaChartDirty() {
   layoutDirty = true;
 }
@@ -37,7 +31,6 @@ function initBackground(w, h) {
       speed: 24 + Math.random() * 40,
       size: 1 + Math.random() * 2.4,
       alpha: 0.45 + Math.random() * 0.4,
-      // 随机一半星星使用粉色 #ec4899，其余保持原先蓝白系
       isPink: Math.random() < 0.5
     });
   }
@@ -51,7 +44,6 @@ function roundedStarPath(ctx, outer, inner) {
   let rot = -Math.PI / 2;
   const step = Math.PI / spikes;
 
-  // 生成外点 / 内点交替顶点
   for (let i = 0; i < spikes; i++) {
     const ox = Math.cos(rot) * outer;
     const oy = Math.sin(rot) * outer;
@@ -71,7 +63,8 @@ function roundedStarPath(ctx, outer, inner) {
     return { x: x / d, y: y / d };
   };
 
-  ctx.beginPath();
+  const ctxAny = /** @type {CanvasRenderingContext2D} */ (/** @type {any} */ (ctx));
+  ctxAny.beginPath();
   for (let i = 0; i < len; i++) {
     const v = verts[i];
     const vPrev = verts[(i - 1 + len) % len];
@@ -90,29 +83,28 @@ function roundedStarPath(ctx, outer, inner) {
     };
 
     if (i === 0) {
-      ctx.moveTo(p1.x, p1.y);
+      ctxAny.moveTo(p1.x, p1.y);
     } else {
-      ctx.lineTo(p1.x, p1.y);
+      ctxAny.lineTo(p1.x, p1.y);
     }
-    ctx.quadraticCurveTo(v.x, v.y, p2.x, p2.y);
+    ctxAny.quadraticCurveTo(v.x, v.y, p2.x, p2.y);
   }
-  ctx.closePath();
+  ctxAny.closePath();
 }
 
 function clamp(v, min, max) {
   return v < min ? min : v > max ? max : v;
 }
-
-/** 在 [min,max] 范围内采样随机浮点 */
+// 工具函数：在 [min, max] 之间取随机浮点数
 function randRange(min, max) {
   return min + Math.random() * (max - min);
 }
-
-function dist(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
+function getCurrentNpm() {
+  if (!state || !state.buffer || !state.totalNotes) return 60; // 默认中等密度
+  const effectiveDur = Math.max(state.buffer.duration - 1, 1);
+  return state.totalNotes / (effectiveDur / 60);
 }
 
-/** 生成星海模式的判定区布局（随机位置 + 间距约束 + 偶尔多边形） */
 function prepareLayout() {
   const notes = state.notes;
   if (!notes || !notes.length) {
@@ -122,6 +114,8 @@ function prepareLayout() {
 
   const w = canvas.width;
   const h = canvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
 
   // 清理旧标记
   for (const n of notes) {
@@ -134,202 +128,129 @@ function prepareLayout() {
     delete n._ringStartT;
   }
 
-  let prev = null;
-  let prev2 = null;
+  // 时间排序
+  const sorted = [...notes].sort((a, b) => (a.time ?? 0) - (b.time ?? 0));
 
-  let i = 0;
-  while (i < notes.length) {
-    const remain = notes.length - i;
+  // ====== 半径：三圈轨道 + 高随机扰动 ======
+  const maxR = Math.min(w, h) / 2 - TARGET_MARGIN;
+  const minR = maxR * 0.55;                   // 三圈整体往外推
+  const radiusSpan = maxR - minR;
 
-    // —— 偶尔生成一组多边形判定区 —— //
-    let polygonPlaced = false;
-    if (remain >= 3 && Math.random() < 0.25) {
-      const maxSides = Math.min(5, remain);
-      const sides = clamp(3 + Math.floor(Math.random() * 3), 3, maxSides); // 3~5
+  const ringCount = 3;
+  const ringBases = [];
+  for (let i = 0; i < ringCount; i++) {
+    const t = (i + 0.5) / ringCount; // 3 个等分轨道
+    ringBases.push(minR + radiusSpan * t);
+  }
 
-      let polyVerts = null;
-      let tries = 0;
+  // 增强随机性，抖动更明显
+  const radiusJitter = radiusSpan / 4;       // ← 大幅增强
 
-      while (!polyVerts && tries < 25) {
-        tries++;
+  // 三圈循环模式：0 → 1 → 2 → 1 → 0 → …
+  const ringPattern = [0, 1, 2, 1];
 
-        const cx = randRange(TARGET_MARGIN, w - TARGET_MARGIN);
-        const cy = randRange(TARGET_MARGIN, h - TARGET_MARGIN);
-        const radius = randRange(
-          TARGET_MIN_DIST * 0.9,
-          TARGET_MAX_DIST * 0.9
-        );
+  // ===== NPM 自适应角步长（增强随机） =====
+  const npm = getCurrentNpm();
+  let minDeg, maxDeg;
 
-        const startAng = Math.random() * Math.PI * 2;
-        const step = (Math.PI * 2) / sides;
-        const verts = [];
-        for (let k = 0; k < sides; k++) {
-          const ang = startAng + k * step;
-          let vx = cx + Math.cos(ang) * radius;
-          let vy = cy + Math.sin(ang) * radius;
-          vx = clamp(vx, TARGET_MARGIN, w - TARGET_MARGIN);
-          vy = clamp(vy, TARGET_MARGIN, h - TARGET_MARGIN);
-          verts.push({ x: vx, y: vy });
+  if (npm < 60) {
+    minDeg = 35; maxDeg = 100;
+  } else if (npm < 100) {
+    minDeg = 28; maxDeg = 70;
+  } else if (npm < 150) {
+    minDeg = 18; maxDeg = 40;
+  } else {
+    minDeg = 12; maxDeg = 26;
+  }
+
+  const minStep = (minDeg * Math.PI) / 180;
+  const maxStep = (maxDeg * Math.PI) / 180;
+
+  // 最小欧氏距离（防重叠，但允许大跳动）
+  const minDist = 160;
+
+  // 初始角度随机
+  let prevAngle = Math.random() * Math.PI * 2;
+
+  for (let i = 0; i < sorted.length; i++) {
+    const note = sorted[i];
+
+    // ---- 三圈半径 + 强随机抖动 ----
+    const ringIndex = ringPattern[i % ringPattern.length];
+
+    let radius =
+      ringBases[ringIndex] +
+      randRange(-radiusJitter, radiusJitter);
+
+    radius = clamp(radius, minR, maxR);
+
+    // ---- 角度：步长随机 + 角度噪声 ----
+    let angle;
+
+    if (i === 0) {
+      angle = prevAngle;
+    } else {
+      const prev = sorted[i - 1];
+
+      for (let attempt = 0; attempt < 8; attempt++) {
+        // 随机步长
+        const step = randRange(minStep, maxStep);
+
+        // 顺时针
+        let candidate = prevAngle - step;
+
+        // 加入轻微噪声（让路线更自然）
+        candidate += randRange(-0.2, 0.2);
+
+        // 计算与上一音符距离
+        const tx = cx + Math.cos(candidate) * radius;
+        const ty = cy + Math.sin(candidate) * radius;
+
+        if (!prev.targetX || !prev.targetY) {
+          angle = candidate;
+          break;
         }
 
-        // 顶点间距检查（连续判定区不能太远/太近）
-        let ok = true;
-        for (let k = 0; k < sides; k++) {
-          const a = verts[k];
-          const b = verts[(k + 1) % sides];
-          const d = dist(a, b);
-          if (d < TARGET_MIN_DIST || d > TARGET_MAX_DIST) {
-            ok = false;
-            break;
-          }
-        }
-        if (!ok) continue;
+        const dx = tx - prev.targetX;
+        const dy = ty - prev.targetY;
+        const d = Math.hypot(dx, dy);
 
-        // 与上一判定区的距离约束
-        if (prev) {
-          const dPrev = dist(prev, verts[0]);
-          if (dPrev < TARGET_MIN_DIST || dPrev > TARGET_MAX_DIST) {
-            ok = false;
-          }
-        }
-
-        // 与已有判定区不重合
-        if (ok) {
-          for (const n of notes) {
-            if (!n._target) continue;
-            for (const v of verts) {
-              if (dist(n._target, v) < 80) {
-                ok = false;
-                break;
-              }
-            }
-            if (!ok) break;
-          }
-        }
-
-        if (ok) {
-          polyVerts = verts;
-        }
-      }
-
-      if (polyVerts) {
-        for (let k = 0; k < polyVerts.length; k++) {
-          const note = notes[i + k];
-          const target = polyVerts[k];
-
-          note.targetX = target.x;
-          note.targetY = target.y;
-          note._target = target;
-
-          // 从屏幕外飞入：沿着中心方向
-          const cx = w / 2;
-          const cy = h / 2;
-          const dirX = target.x - cx;
-          const dirY = target.y - cy;
-          const len = Math.hypot(dirX, dirY) || 1;
-          const outDist = Math.max(w, h) * 0.72;
-          note.spawnX = target.x + (dirX / len) * outDist;
-          note.spawnY = target.y + (dirY / len) * outDist;
-
-          prev2 = prev;
-          prev = target;
-        }
-        i += polyVerts.length;
-        polygonPlaced = true;
-      }
-    }
-
-    if (polygonPlaced) continue;
-
-    // —— 普通单点随机判定区 —— //
-    const note = notes[i];
-    let target = null;
-    let attempts = 0;
-
-    while (!target && attempts < 40) {
-      attempts++;
-
-      let x, y;
-      if (!prev) {
-        x = randRange(TARGET_MARGIN, w - TARGET_MARGIN);
-        y = randRange(TARGET_MARGIN, h - TARGET_MARGIN);
-      } else {
-        const step = randRange(TARGET_MIN_DIST, TARGET_MAX_DIST);
-        const ang = Math.random() * Math.PI * 2;
-        x = prev.x + Math.cos(ang) * step;
-        y = prev.y + Math.sin(ang) * step;
-        x = clamp(x, TARGET_MARGIN, w - TARGET_MARGIN);
-        y = clamp(y, TARGET_MARGIN, h - TARGET_MARGIN);
-      }
-      const cand = { x, y };
-
-      // 与之前所有判定区距离不能太近（避免重叠）
-      let ok = true;
-      for (const other of notes) {
-        if (!other._target) continue;
-        if (dist(other._target, cand) < 80) {
-          ok = false;
+        if (d >= minDist || attempt === 7) {
+          angle = candidate;
           break;
         }
       }
-      if (!ok) continue;
-
-      // 与上一判定区距离不能太近 / 太远
-      if (prev) {
-        const dPrev = dist(prev, cand);
-        if (dPrev < TARGET_MIN_DIST || dPrev > TARGET_MAX_DIST) {
-          ok = false;
-        }
-      }
-      if (!ok) continue;
-
-      // 相邻“判定区连线”的夹角不能过小（但允许近似一条直线，所以阈值较小）
-      if (prev && prev2) {
-        const v1x = prev.x - prev2.x;
-        const v1y = prev.y - prev2.y;
-        const v2x = cand.x - prev.x;
-        const v2y = cand.y - prev.y;
-        const len1 = Math.hypot(v1x, v1y) || 1;
-        const len2 = Math.hypot(v2x, v2y) || 1;
-        const cos = (v1x * v2x + v1y * v2y) / (len1 * len2);
-        const angle = Math.acos(Math.max(-1, Math.min(1, cos)));
-        if (angle < TARGET_MIN_ANGLE_RAD) {
-          ok = false;
-        }
-      }
-      if (!ok) continue;
-
-      target = cand;
     }
 
-    if (!target) {
-      // 兜底
-      target = {
-        x: randRange(TARGET_MARGIN, w - TARGET_MARGIN),
-        y: randRange(TARGET_MARGIN, h - TARGET_MARGIN)
-      };
-    }
+    // ---- 最终 target ----
+    const tx = cx + Math.cos(angle) * radius;
+    const ty = cy + Math.sin(angle) * radius;
 
-    note.targetX = target.x;
-    note.targetY = target.y;
-    note._target = target;
+    note.targetX = tx;
+    note.targetY = ty;
+    note._target = { x: tx, y: ty };
 
-    const cx = w / 2;
-    const cy = h / 2;
-    const dirX = target.x - cx;
-    const dirY = target.y - cy;
+    // ===== 飞行轨迹：切线方向（旋转 90°） =====
+    const dirX = tx - cx;
+    const dirY = ty - cy;
     const len = Math.hypot(dirX, dirY) || 1;
-    const outDist = Math.max(w, h) * 0.72;
-    note.spawnX = target.x + (dirX / len) * outDist;
-    note.spawnY = target.y + (dirY / len) * outDist;
 
-    prev2 = prev;
-    prev = target;
-    i++;
+    const tangentX = dirY / len;
+    const tangentY = -dirX / len;
+
+    const outDist = Math.max(w, h) * 0.95;
+    note.spawnX = tx + tangentX * outDist;
+    note.spawnY = ty + tangentY * outDist;
+
+    prevAngle = angle;
   }
 
   layoutDirty = false;
 }
+
+
+
+
 
 function ensureLayout() {
   if (layoutDirty && state.notes && state.notes.length) {
@@ -368,9 +289,10 @@ function getCurrentAndNext(notes, tAudio) {
 
 /**
  * 星海模式主渲染
- * - 只有当前音符和判定区有“音符→判定区”的引导线
+ * - 判定区按时间顺序绕中心顺时针排布
+ * - 只有当前音符有“音符→判定区”引导线
  * - 同时存在多个判定区时，只有“当前 + 下一判定区”之间有连线
- * - 判定区的收缩圆环：只有在“上一个判定区判定完”之后才开始收缩
+ * - 判定区的收缩圆环：只有在“上一判定区判定完”之后才开始收缩
  */
 export function renderStarseaScene(ctx, tAudio, now, dt) {
   const w = canvas.width;
@@ -404,23 +326,18 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
     if (s.x < -10) {
       s.x = w + 10;
       s.y = Math.random() * h;
-      // 重新随机一半为粉色，一半为原色
       s.isPink = Math.random() < 0.5;
     }
 
-    // 星点
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
     if (s.isPink) {
-      // 粉色星星 #ec4899
       ctx.fillStyle = `rgba(236,72,153,${s.alpha})`;
     } else {
-      // 原来的白色星点
       ctx.fillStyle = `rgba(248,250,252,${s.alpha})`;
     }
     ctx.fill();
 
-    // 尾迹
     ctx.beginPath();
     ctx.moveTo(s.x + s.size * 2, s.y);
     ctx.lineTo(s.x + s.size * 7, s.y);
@@ -435,7 +352,6 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
   ctx.restore();
 
   const rawNotes = state.notes || [];
-  // 按时间排序，保证“上一 / 下一”逻辑正确
   const notes = [...rawNotes].sort((a, b) => {
     const ta = a.time ?? 0;
     const tb = b.time ?? 0;
@@ -447,7 +363,7 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
     tAudio
   );
 
-  // —— 当前 + 下一判定区之间的连线（只有这两者有“判定区连线”） —— //
+  // 当前 + 下一判定区之间连线
   if (
     currentNote &&
     nextNote &&
@@ -479,7 +395,6 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
     }
   }
 
-  // —— 判定区 + 星星音符 —— //
   let prevForRing = null;
 
   for (const note of notes) {
@@ -488,31 +403,26 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
       continue;
     }
 
-    // 命中或 MISS 后：星星和判定区一起消失
     if (note.judged) {
       prevForRing = note;
       continue;
     }
 
-    // 星星相对音符时间的活动范围
     const activeSpan = Math.abs(tAudio - note.time);
     if (activeSpan > travelTime * 2.0) {
       prevForRing = note;
       continue;
     }
 
-    // 飞行时间归一化：0 -> 刚出现, 1 -> 刚到达判定点
     const travelStart = note.time - travelTime;
     const travelLen = travelTime;
     let tNorm = (tAudio - travelStart) / travelLen;
 
-    // 还没飞入视野，不画任何东西
     if (tNorm < 0) {
       prevForRing = note;
       continue;
     }
 
-    // 超过判定时机太久自动 MISS （只对未判定音符）
     if (tNorm > 1.4) {
       if (
         state.mode === "playing" &&
@@ -530,21 +440,19 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
 
     const isCurrent = note === currentNote;
 
-    // 星星与判定区共用的尺寸（整体放大）
     const baseOuter = note.isGold ? 50 : 46;
     const baseInner = baseOuter * 0.5;
 
-    // 星星当前位置
     const clamped = clamp(tNorm, 0, 1);
     const posX = note.spawnX + (note.targetX - note.spawnX) * clamped;
     const posY = note.spawnY + (note.targetY - note.spawnY) * clamped;
 
-    // —— 判定区收缩环：只有在“上一判定区已判定”后才开始收缩 —— //
+    // 判定圈收缩逻辑：上一判定区完成后才开始收缩
     const prev = prevForRing;
     const prevJudged = !prev || prev.judged;
 
     if (prevJudged && note._ringStartT == null) {
-      note._ringStartT = tAudio; // 第一次满足条件时，记录收缩起点
+      note._ringStartT = tAudio;
     }
 
     const shrinkT =
@@ -573,7 +481,7 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
     ctx.stroke();
     ctx.restore();
 
-    // —— 当前音符才画“音符→判定区”的引导线 —— //
+    // 当前音符的引导线
     if (isCurrent) {
       ctx.save();
       ctx.beginPath();
@@ -599,7 +507,7 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
       ctx.restore();
     }
 
-    // —— 判定区（圆角星星） —— //
+    // 判定区（圆角星）
     ctx.save();
     ctx.translate(note.targetX, note.targetY);
     const rotBox = (note.time * 0.4) % (Math.PI * 2);
@@ -644,7 +552,6 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
     ctx.fill();
 
     if (isCurrent) {
-      // 额外的发光晕圈
       const glow = ctx.createRadialGradient(
         0,
         0,
@@ -665,7 +572,7 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
 
     ctx.restore();
 
-    // —— 星星音符（圆角星星，尺寸与判定区相同 & 高亮当前音符） —— //
+    // 星星音符本体
     ctx.save();
     ctx.translate(posX, posY);
     const rotStar = (note.time * 0.7 + now * 0.7) % (Math.PI * 2);
@@ -678,14 +585,7 @@ export function renderStarseaScene(ctx, tAudio, now, dt) {
 
     roundedStarPath(ctx, starOuter, starInner);
 
-    const starGrad = ctx.createRadialGradient(
-      0,
-      0,
-      0,
-      0,
-      0,
-      starOuter
-    );
+    const starGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, starOuter);
     if (note.isGold) {
       starGrad.addColorStop(
         0,
