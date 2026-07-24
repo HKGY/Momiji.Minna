@@ -18,37 +18,22 @@
         <small>
             数据：ゆめみ 2025版欧洲舰载机分级表（A1~A3/B1~B4/C1~C3）＋ 2026夏活检证文档（2026-07-23）。<br>
             适用 E4/E5（欧洲体系）。E3 的「飞机A/B」为按架数叠加的另一套机制（飞机A：O/G等点 1架1.08/2架1.16，Z点 1架1.11/2架1.18/3架1.28?，打空无效），不在本计算器范围。<br>
-            注：C组（基地）与 E4-Z/E5-J2 等点位的 2026 倍率未检证，按 1.00 计；E4-S 行数值带「?」。Loire 130M／130M改(熟練) 在 E5 另有单独 1.12?（SP 列）。搭载 0 格无效。
+            注：C组（基地）与 E4-Z/E5-J2 等点位的 2026 倍率未检证，按 1.00 计；E4-S 行数值带「?」。Loire 130M／130M改(熟練) 在 E5 另有单独 1.12?（SP 列）。搭载 0 格无效。<br>
+            支持同时计算多条舰娘：每条舰娘独立配置槽位类别；勾选「跨舰娘装备去重」后按持有数量从上到下分配（同一件装备不会同时出现在两条舰娘上）。
         </small>
         <br>
         <textarea id="svdata" rows="20" cols="100" placeholder="Paste your svdata JSON here"></textarea>
         <br>
         <label><input type="checkbox" id="ignoreInv"> 忽略持有判定（把所有装备视为持有；新装备 ID 未收录时也请勾选）</label>
         <br>
+        <label><input type="checkbox" id="dedup" checked> 跨舰娘装备去重（按持有数量从上到下分配；勾选「忽略持有判定」时无效）</label>
+        <br>
         <select id="point"></select>
         <br>
-        <label>
-            <select id="category1"></select>
-            <input type="checkbox" id="enable1" checked> Enable
-        </label>
-        <br>
-        <label>
-            <select id="category2"></select>
-            <input type="checkbox" id="enable2" checked> Enable
-        </label>
-        <br>
-        <label>
-            <select id="category3"></select>
-            <input type="checkbox" id="enable3" checked> Enable
-        </label>
-        <br>
-        <label>
-            <select id="category4"></select>
-            <input type="checkbox" id="enable4" checked> Enable
-        </label>
-        <br>
+        <div id="ships"></div>
+        <button onclick="addShip()">＋ 添加舰娘</button>
         <button onclick="calculate()">Calculate</button>
-        <p id="result"></p>
+        <div id="result"></div>
         <script>
             // 列: ID,Name,A1,A2,A3,B1,B2,B3,B4,C1,C2,C3,SP,Power,Air
             // ID=0 表示装备 ID 未收录（请勾选“忽略持有判定”）
@@ -156,15 +141,12 @@
             }
 
             const GROUPS = ["A1", "A2", "A3", "B1", "B2", "B3", "B4", "C1", "C2", "C3", "SP"];
+            const DEFAULT_SLOTS = ["Fighter", "Attacker", "Bomber", "Recon"];
 
-            function Table(data, seenSlotitemIds, ignoreInv) {
+            function Table(data) {
                 const rows = parseCSV(data);
                 const columns = ["ID", "Name", "A1", "A2", "A3", "B1", "B2", "B3", "B4", "C1", "C2", "C3", "SP", "Power", "Air"];
-                return rows.map(row => {
-                    const item = Object.fromEntries(columns.map((col, idx) => [col, row[idx]]));
-                    item.Inv = ignoreInv || seenSlotitemIds.has(item.ID);
-                    return item;
-                });
+                return rows.map(row => Object.fromEntries(columns.map((col, idx) => [col, row[idx]])));
             }
 
             function MultTable(data) {
@@ -173,115 +155,185 @@
                 return rows.map(row => Object.fromEntries(columns.map((col, idx) => [col, row[idx]])));
             }
 
-            function populateSelect(id, options) {
-                const select = document.getElementById(id);
-                options.forEach(option => {
+            function calcMult(items, EM, PM, p) {
+                let thisMult = 1;
+                for (const mult of GROUPS) {
+                    if (items.some(item => item[mult] === "TRUE")) {
+                        for (const i of EM) {
+                            if (p.includes(i.Name)) {
+                                thisMult *= parseFloat(i[mult]);
+                            }
+                        }
+                        for (const i of PM) {
+                            if (i.Name === p) {
+                                thisMult *= parseFloat(i[mult]);
+                            }
+                        }
+                    }
+                }
+                return thisMult;
+            }
+
+            // 单舰最优搜索：tables 为各槽候选表，counts 为剩余持有数（Map），返回 {mult,power,air,items} 或 null
+            function bestForShip(tables, counts, ignoreInv, EM, PM, p) {
+                const filtered = tables.map(t => ignoreInv ? t : t.filter(i => (counts.get(i.ID) || 0) > 0));
+                let best = null;
+                function rec(idx, chosen) {
+                    if (idx === filtered.length) {
+                        if (!ignoreInv) {
+                            const usage = {};
+                            for (const it of chosen) usage[it.ID] = (usage[it.ID] || 0) + 1;
+                            for (const id in usage) {
+                                if ((counts.get(id) || 0) < usage[id]) return;
+                            }
+                        }
+                        const mult = calcMult(chosen, EM, PM, p);
+                        const power = chosen.reduce((s, i) => s + parseFloat(i.Power), 0);
+                        const air = chosen.reduce((s, i) => s + parseFloat(i.Air), 0);
+                        if (!best || mult > best.mult || mult === best.mult && (power > best.power || power === best.power && air > best.air)) {
+                            best = { mult, power, air, items: chosen.slice() };
+                        }
+                        return;
+                    }
+                    for (const item of filtered[idx]) rec(idx + 1, [...chosen, item]);
+                }
+                rec(0, []);
+                return best;
+            }
+
+            // ===== 多舰娘 UI 状态 =====
+            let ships = [];
+            let shipSeq = 0;
+
+            function categoryOptions() {
+                return Object.keys(categories).filter(key => key !== 'EventMultiplier' && key !== 'PointMultiplier');
+            }
+
+            function addShip() {
+                shipSeq += 1;
+                ships.push({
+                    id: shipSeq,
+                    name: '舰娘' + shipSeq,
+                    slots: DEFAULT_SLOTS.map(c => ({ category: c, enabled: true }))
+                });
+                renderShips();
+            }
+
+            function removeShip(id) {
+                ships = ships.filter(s => s.id !== id);
+                renderShips();
+            }
+
+            function renderShips() {
+                const container = document.getElementById('ships');
+                container.innerHTML = '';
+                ships.forEach(ship => {
+                    const card = document.createElement('div');
+                    card.style.cssText = 'border:1px solid #ccc;border-radius:6px;padding:8px 12px;margin:8px 0;';
+
+                    const head = document.createElement('div');
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.value = ship.name;
+                    nameInput.size = 16;
+                    nameInput.oninput = () => { ship.name = nameInput.value; };
+                    const rmBtn = document.createElement('button');
+                    rmBtn.textContent = '删除';
+                    rmBtn.style.marginLeft = '8px';
+                    rmBtn.onclick = () => removeShip(ship.id);
+                    head.appendChild(nameInput);
+                    head.appendChild(rmBtn);
+                    card.appendChild(head);
+
+                    ship.slots.forEach((slot, si) => {
+                        const row = document.createElement('label');
+                        row.style.cssText = 'display:block;margin:4px 0 0;';
+                        const select = document.createElement('select');
+                        categoryOptions().forEach(option => {
+                            const opt = document.createElement('option');
+                            opt.value = option;
+                            opt.text = option;
+                            select.add(opt);
+                        });
+                        select.value = slot.category;
+                        select.onchange = () => { slot.category = select.value; };
+                        const check = document.createElement('input');
+                        check.type = 'checkbox';
+                        check.checked = slot.enabled;
+                        check.style.marginLeft = '6px';
+                        check.onchange = () => { slot.enabled = check.checked; };
+                        row.appendChild(document.createTextNode('槽' + (si + 1) + ' '));
+                        row.appendChild(select);
+                        row.appendChild(check);
+                        row.appendChild(document.createTextNode(' Enable'));
+                        card.appendChild(row);
+                    });
+
+                    container.appendChild(card);
+                });
+            }
+
+            function initialize() {
+                const pointOptions = parseCSV(categories.PointMultiplier).map(row => row[1]);
+                const select = document.getElementById('point');
+                pointOptions.forEach(option => {
                     const opt = document.createElement('option');
                     opt.value = option;
                     opt.text = option;
                     select.add(opt);
                 });
+                addShip();
             }
 
-            function initialize() {
-                const categoryOptions = Object.keys(categories).filter(key => key !== 'EventMultiplier' && key !== 'PointMultiplier');
-                const pointOptions = parseCSV(categories.PointMultiplier).map(row => row[1]);
-
-                populateSelect('point', pointOptions);
-                populateSelect('category1', categoryOptions);
-                populateSelect('category2', categoryOptions);
-                populateSelect('category3', categoryOptions);
-                populateSelect('category4', categoryOptions);
+            function escapeHtml(s) {
+                return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             }
 
             function calculate() {
                 const svdata = document.getElementById('svdata').value;
                 const p = document.getElementById('point').value;
                 const ignoreInv = document.getElementById('ignoreInv').checked;
+                const dedup = document.getElementById('dedup').checked;
 
-                const categoriesEnabled = [
-                    { enabled: document.getElementById('enable1').checked, category: document.getElementById('category1').value },
-                    { enabled: document.getElementById('enable2').checked, category: document.getElementById('category2').value },
-                    { enabled: document.getElementById('enable3').checked, category: document.getElementById('category3').value },
-                    { enabled: document.getElementById('enable4').checked, category: document.getElementById('category4').value }
-                ].filter(c => c.enabled);
-
-                let seenSlotitemIds = new Set();
+                const counts = new Map();
                 if (!ignoreInv) {
                     const content = svdata.slice(7);
                     const equip = JSON.parse(content);
-                    seenSlotitemIds = new Set(equip.api_data.api_slot_item.map(item => item.api_slotitem_id.toString()));
+                    for (const item of equip.api_data.api_slot_item) {
+                        const key = item.api_slotitem_id.toString();
+                        counts.set(key, (counts.get(key) || 0) + 1);
+                    }
                 }
 
                 const EM = MultTable(categories.EventMultiplier);
                 const PM = MultTable(categories.PointMultiplier);
 
-                const enabledTables = categoriesEnabled.map(c => Table(categories[c.category], seenSlotitemIds, ignoreInv));
-
-                let maxMult = 0;
-                let maxPower = 0;
-                let maxAir = 0;
-                let project = [];
-
-                function calculateMultiplier(items) {
-                    let thisMult = 1;
-                    for (const mult of GROUPS) {
-                        if (items.some(item => item[mult] === "TRUE")) {
-                            for (const i of EM) {
-                                if (p.includes(i.Name)) {
-                                    thisMult *= parseFloat(i[mult]);
-                                }
-                            }
-                            for (const i of PM) {
-                                if (i.Name === p) {
-                                    thisMult *= parseFloat(i[mult]);
-                                }
-                            }
+                const rows = [];
+                for (const ship of ships) {
+                    const tables = ship.slots.filter(s => s.enabled).map(s => Table(categories[s.category]));
+                    if (tables.length === 0) {
+                        rows.push({ name: ship.name, best: null });
+                        continue;
+                    }
+                    const best = bestForShip(tables, counts, ignoreInv, EM, PM, p);
+                    if (best && dedup && !ignoreInv) {
+                        for (const it of best.items) {
+                            counts.set(it.ID, counts.get(it.ID) - 1);
                         }
                     }
-                    return thisMult;
+                    rows.push({ name: ship.name, best });
                 }
 
-                function calculatePower(items) {
-                    let thisPower = 0;
-                    for (const i of items) {
-                        thisPower += parseFloat(i["Power"])
-                    }
-                    return thisPower;
-                }
-                function calculateAir(items) {
-                    let thisAir = 0;
-                    for (const i of items) {
-                        thisAir += parseFloat(i["Air"])
-                    }
-                    return thisAir;
-                }
-
-                function generateCombinations(arrays, prefix = []) {
-                    if (arrays.length === 0) {
-                        const items = prefix.filter(item => item.Inv);
-                        if (items.length === prefix.length) {
-                            const thisMult = calculateMultiplier(items);
-                            const thisPower = calculatePower(items);
-                            const thisAir = calculateAir(items);
-                            if (thisMult > maxMult || thisMult == maxMult && thisPower > maxPower || thisMult == maxMult && thisPower == maxPower && thisAir > maxAir) {
-                                maxMult = thisMult;
-                                maxPower = thisPower;
-                                maxAir = thisAir;
-                                project = items.map(item => item.Name);
-                            }
-                        }
+                let html = '<table><thead><tr><th>舰娘</th><th>装备</th><th>倍率</th><th>火力</th><th>对空</th></tr></thead><tbody>';
+                for (const r of rows) {
+                    if (!r.best) {
+                        html += `<tr><td>${escapeHtml(r.name)}</td><td colspan="4">无可用装备组合（持有不足或全部槽位未启用）</td></tr>`;
                     } else {
-                        const [first, ...rest] = arrays;
-                        for (const item of first) {
-                            generateCombinations(rest, [...prefix, item]);
-                        }
+                        html += `<tr><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.best.items.map(i => i.Name).join(' / '))}</td><td>${r.best.mult.toFixed(4)}</td><td>${r.best.power}</td><td>${r.best.air}</td></tr>`;
                     }
                 }
-
-                generateCombinations(enabledTables);
-
-                document.getElementById('result').innerText = `Equipment: ${project.join(', ')}\n Max Multiplier: ${maxMult.toFixed(4)}\n Max Fire Power: ${maxPower}\n Max Air Superiority: ${maxAir}`;
+                html += '</tbody></table>';
+                document.getElementById('result').innerHTML = html;
             }
 
             window.onload = initialize;
