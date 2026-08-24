@@ -1,0 +1,346 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@4/animate.min.css">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css">
+    <title>Aircraft Multiplier Calculator 2026</title>
+</head>
+
+<body>
+    <div class="container-lg px-3 my-5 markdown-body">
+        <h3>舰载机倍卡计算器 2026夏</h3>
+        What is svdata? -> <a class="h1" href="/20240808-data.html">Multiplier Calculator</a>
+        <br>
+        <small>
+            数据：ゆめみ 2025版欧洲舰载机分级表（A1~A3/B1~B4/C1~C3）＋ 2026夏活检证文档（2026-07-23）。<br>
+            适用 E4/E5（欧洲体系）。E3 的「飞机A/B」为按架数叠加的另一套机制（飞机A：O/G等点 1架1.08/2架1.16，Z点 1架1.11/2架1.18/3架1.28?，打空无效），不在本计算器范围。<br>
+            注：C组（基地）与 E4-Z/E5-J2 等点位的 2026 倍率未检证，按 1.00 计；E4-S 行数值带「?」。Loire 130M／130M改(熟練) 在 E5 另有单独 1.12?（SP 列）。搭载 0 格无效。<br>
+            支持同时计算多条舰娘：每条舰娘独立配置槽位类别；勾选「跨舰娘装备去重」后按持有数量从上到下分配（同一件装备不会同时出现在两条舰娘上）。
+        </small>
+        <br>
+        <textarea id="svdata" rows="20" cols="100" placeholder="Paste your svdata JSON here"></textarea>
+        <br>
+        <label><input type="checkbox" id="ignoreInv"> 忽略持有判定（把所有装备视为持有；新装备 ID 未收录时也请勾选）</label>
+        <br>
+        <label><input type="checkbox" id="dedup" checked> 跨舰娘装备去重（按持有数量从上到下分配；勾选「忽略持有判定」时无效）</label>
+        <br>
+        <select id="point"></select>
+        <br>
+        <div id="ships"></div>
+        <button onclick="addShip()">＋ 添加舰娘</button>
+        <button onclick="calculate()">Calculate</button>
+        <div id="result"></div>
+        <script>
+            // 列: ID,Name,A1,A2,A3,B1,B2,B3,B4,C1,C2,C3,SP,Power,Air
+            // ID=0 表示装备 ID 未收录（请勾选“忽略持有判定”）
+            const categories = {
+                Fighter: `375,XF5U,,,TRUE,,,,,,,,,0,12
+353,Fw190 A-5改(熟練),,,TRUE,,,,,,,TRUE,,0,11
+189,Re.2005 改,TRUE,,,,,,,,,TRUE,,0,11
+435,Corsair Mk.II(Ace),TRUE,,,,,,,,TRUE,,,0,11
+422,FR-1 Fireball,,,TRUE,,,,,,,,,0,11
+159,Fw190T改,,,TRUE,,,,,,,TRUE,,0,10
+255,F6F-5N,,,TRUE,,,,,,,,,0,10
+206,F6F-5,,,TRUE,,,,,,,,,0,10
+434,Corsair Mk.II,TRUE,,,,,,,,TRUE,,,0,10
+473,F4U-2 Night Corsair,,TRUE,,,,,,,TRUE,,,0,9
+0,Bf109 T-3(G),,,TRUE,,,,,,,,,0,9
+252,Seafire Mk.III改,TRUE,,,,,,,,TRUE,,,0,9
+158,Bf109T改,,,TRUE,,,,,,,TRUE,,0,8
+254,F6F-3N,,,TRUE,,,,,,,,,0,8
+205,F6F-3,,,TRUE,,,,,,,,,0,8
+184,Re.2001 OR改,,TRUE,,,,,,,,TRUE,,0,6
+198,F4F-4,,,TRUE,,,,,,,,,0,5
+197,F4F-3,,,TRUE,,,,,,,,,0,4
+249,Fulmar,,TRUE,,,,,,,,TRUE,,0,3
+216,Ro.44水上戦闘機bis,,,TRUE,,,,,,,,,0,3
+0,Sea Gladiator,,TRUE,,,,,,,,,,0,2
+215,Ro.44水上戦闘機,,,TRUE,,,,,,,,,0,2`,
+                Attacker: `389,TBM-3W+3S,,,TRUE,,,,,,,,,10,0
+257,TBM-3D,,,TRUE,,,,,,,,,9,0
+256,TBF,,,TRUE,,,,,,,,,9,0
+481,Mosquito TR Mk.33,TRUE,,,,,,,,TRUE,,,8,0
+244,Swordfish Mk.III(熟練),TRUE,,,TRUE,,,,,,,,8,0
+0,Ju87 D-4(Fliegerass),TRUE,,,,,,,,,,,7,0
+424,Barracuda Mk.II,TRUE,,,,,,,,,,,7,0
+425,Barracuda Mk.III,TRUE,,,,,,,,,,,6,0
+0,TBD(Yellow Wings),,,TRUE,,,,,,,,,6,0
+196,TBD,,,TRUE,,,,,,,,,5,0
+243,Swordfish Mk.II(熟練),,TRUE,,TRUE,,,,,,,,5,0
+188,Re.2001 G改,,TRUE,,,,,,,,,,4,0
+242,Swordfish,,,TRUE,TRUE,,,,,,,,3,0`,
+                Bomber: `475,AU-1,,TRUE,,,,,,,TRUE,,,12,9
+421,SB2C-5,,,TRUE,,,,,,,,,12,2
+476,F4U-7,TRUE,,,,,,,,TRUE,,,11,10
+420,SB2C-3,,,TRUE,,,,,,,,,11,2
+306,Ju87C改二(KMX搭載機/熟練),,TRUE,,,,,,,,,,10,0
+305,Ju87C改二(KMX搭載機),,TRUE,,,,,,,,,,9,0
+64,Ju87C改,,TRUE,,,,,,,,,,9,0
+0,SBD VB-2(爆撃飛行隊),,TRUE,,,,,,,,,,8,2
+233,F4U-1D,,,TRUE,,,,,,,,,7,7
+419,SBD-5,,,TRUE,,,,,,,,,7,2
+0,SBD(Yellow Wings),,,TRUE,,,,,,,,,7,2
+474,F4U-4,,TRUE,,,,,,,TRUE,,,6,10
+195,SBD,,,TRUE,,,,,,,,,6,2
+316,Re.2001 CB改,,TRUE,,,,,,,,,,6,4
+248,Skua,,TRUE,,,,,,,,,,4,2
+277,FM-2,,,TRUE,,,,,,,,,2,6`,
+                Recon: `415,SO3C Seamew改,,,TRUE,,,,,,,,,0,0
+0,SOC Seagull 後期型(熟練),,,TRUE,,,,,,,,,0,0
+371,Fairey Seafox改,,,TRUE,,,,,,,,,0,0
+171,OS2U,,,TRUE,,,,,,,,,0,0
+0,SBD VS-2(偵察飛行隊),,TRUE,,,,,,,,,,0,0
+538,Loire 130M改(熟練),TRUE,,,,,TRUE,,,,,TRUE,0,0
+370,Swordfish Mk.II改(水偵型),,,TRUE,TRUE,,,,,,,,0,0
+515,Sea Otter,TRUE,,,,TRUE,,,,TRUE,,,0,0
+0,Ar196改,,TRUE,,,,TRUE,,,,,,0,0
+163,Ro.43水偵,,,TRUE,,,,,,,,,0,0
+414,SOC Seagull,,,TRUE,,,,,,,,,0,0
+304,S9 Osprey,,,TRUE,,,,,,,,,0,0
+510,Walrus,,TRUE,,,TRUE,,,,,TRUE,,0,0
+423,Fulmar(戦闘偵察/熟練),TRUE,,,,TRUE,,,,TRUE,,,2,4
+471,Loire 130M,TRUE,,,,,TRUE,,,TRUE,,TRUE,0,0`,
+                SeaplaneBomber: `369,Swordfish Mk.III改(水上機型/熟練),,,TRUE,TRUE,,,,,,,,8,0
+194,Laté 298B,,TRUE,,,,TRUE,,,,,,5,0
+368,Swordfish Mk.III改(水上機型),,,TRUE,TRUE,,,,,,,,7,0
+367,Swordfish(水上機型),,,TRUE,TRUE,,,,,,,,5,0`,
+                LandAttacker: `396,深山改,,,,,,,,TRUE,,,,17,0
+395,深山,,,,,,,,TRUE,,,,16,0
+406,Do 217 K-2＋Fritz-X,,,,,,,,,,TRUE,,16,0
+0,Do 217 E-5＋TV誘導型 Hs293D,,,,,,,,,,TRUE,,14,0
+405,Do 217 E-5＋Hs293初期型,,,,,,,,,,TRUE,,13,0
+433,SM.79 bis(熟練),,,,,,,,,TRUE,,,13,0
+432,SM.79 bis,,,,,,,,,,TRUE,,12,0
+431,SM.79,,,,,,,,,,TRUE,,9,0
+459,B-25,,,,,,,,,,TRUE,,8,0
+479,Mosquito FB Mk.VI,,,,,,,,,TRUE,,,5,0
+401,Do 17 Z-2,,,,,,,,,,TRUE,,0,0`,
+                LandFighterEtc: `516,Me 262 A-1a/R1,,,,,,,,,TRUE,,,0,15
+354,Fw190 D-9,,,,,,,,,,TRUE,,0,12
+253,Spitfire Mk.IX(熟練),,,,,,,,,TRUE,,,0,10
+251,Spitfire Mk.V,,,,,,,,,TRUE,,,0,9
+250,Spitfire Mk.I,,,,,,,,,TRUE,,,0,7
+178,PBY-5A Catalina,,,,,,,,,,TRUE,,0,0
+480,Mosquito PR Mk.IV,,,,,,,,,TRUE,,,0,0`,
+                Jet: `0,Ho229,,,,,,,,,TRUE,,,16,0`,
+                EventMultiplier: `汎マップ,E4,1.06,1.05,1.04,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00
+汎マップ,E5,1.07,1.05,1.03,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.12`,
+                PointMultiplier: `個別マス,E4-D(P1boss),1.04,1.03,1.03,1.00,1.04,1.07,1.04,1.00,1.00,1.00,1.00
+個別マス,E4-S(P3boss?),1.05,1.04,1.03,1.06,1.03,1.06,1.03,1.00,1.00,1.00,1.00
+個別マス,E4-其他点,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00
+個別マス,E5-全点(点位未检证),1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00`
+            };
+
+            function parseCSV(data) {
+                const rows = data.trim().split('\n');
+                return rows.map(row => row.split(','));
+            }
+
+            const GROUPS = ["A1", "A2", "A3", "B1", "B2", "B3", "B4", "C1", "C2", "C3", "SP"];
+            const DEFAULT_SLOTS = ["Fighter", "Attacker", "Bomber", "Recon"];
+
+            function Table(data) {
+                const rows = parseCSV(data);
+                const columns = ["ID", "Name", "A1", "A2", "A3", "B1", "B2", "B3", "B4", "C1", "C2", "C3", "SP", "Power", "Air"];
+                return rows.map(row => Object.fromEntries(columns.map((col, idx) => [col, row[idx]])));
+            }
+
+            function MultTable(data) {
+                const rows = parseCSV(data);
+                const columns = ["Type", "Name", "A1", "A2", "A3", "B1", "B2", "B3", "B4", "C1", "C2", "C3", "SP"];
+                return rows.map(row => Object.fromEntries(columns.map((col, idx) => [col, row[idx]])));
+            }
+
+            function calcMult(items, EM, PM, p) {
+                let thisMult = 1;
+                for (const mult of GROUPS) {
+                    if (items.some(item => item[mult] === "TRUE")) {
+                        for (const i of EM) {
+                            if (p.includes(i.Name)) {
+                                thisMult *= parseFloat(i[mult]);
+                            }
+                        }
+                        for (const i of PM) {
+                            if (i.Name === p) {
+                                thisMult *= parseFloat(i[mult]);
+                            }
+                        }
+                    }
+                }
+                return thisMult;
+            }
+
+            // 单舰最优搜索：tables 为各槽候选表，counts 为剩余持有数（Map），返回 {mult,power,air,items} 或 null
+            function bestForShip(tables, counts, ignoreInv, EM, PM, p) {
+                const filtered = tables.map(t => ignoreInv ? t : t.filter(i => (counts.get(i.ID) || 0) > 0));
+                let best = null;
+                function rec(idx, chosen) {
+                    if (idx === filtered.length) {
+                        if (!ignoreInv) {
+                            const usage = {};
+                            for (const it of chosen) usage[it.ID] = (usage[it.ID] || 0) + 1;
+                            for (const id in usage) {
+                                if ((counts.get(id) || 0) < usage[id]) return;
+                            }
+                        }
+                        const mult = calcMult(chosen, EM, PM, p);
+                        const power = chosen.reduce((s, i) => s + parseFloat(i.Power), 0);
+                        const air = chosen.reduce((s, i) => s + parseFloat(i.Air), 0);
+                        if (!best || mult > best.mult || mult === best.mult && (power > best.power || power === best.power && air > best.air)) {
+                            best = { mult, power, air, items: chosen.slice() };
+                        }
+                        return;
+                    }
+                    for (const item of filtered[idx]) rec(idx + 1, [...chosen, item]);
+                }
+                rec(0, []);
+                return best;
+            }
+
+            // ===== 多舰娘 UI 状态 =====
+            let ships = [];
+            let shipSeq = 0;
+
+            function categoryOptions() {
+                return Object.keys(categories).filter(key => key !== 'EventMultiplier' && key !== 'PointMultiplier');
+            }
+
+            function addShip() {
+                shipSeq += 1;
+                ships.push({
+                    id: shipSeq,
+                    name: '舰娘' + shipSeq,
+                    slots: DEFAULT_SLOTS.map(c => ({ category: c, enabled: true }))
+                });
+                renderShips();
+            }
+
+            function removeShip(id) {
+                ships = ships.filter(s => s.id !== id);
+                renderShips();
+            }
+
+            function renderShips() {
+                const container = document.getElementById('ships');
+                container.innerHTML = '';
+                ships.forEach(ship => {
+                    const card = document.createElement('div');
+                    card.style.cssText = 'border:1px solid #ccc;border-radius:6px;padding:8px 12px;margin:8px 0;';
+
+                    const head = document.createElement('div');
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.value = ship.name;
+                    nameInput.size = 16;
+                    nameInput.oninput = () => { ship.name = nameInput.value; };
+                    const rmBtn = document.createElement('button');
+                    rmBtn.textContent = '删除';
+                    rmBtn.style.marginLeft = '8px';
+                    rmBtn.onclick = () => removeShip(ship.id);
+                    head.appendChild(nameInput);
+                    head.appendChild(rmBtn);
+                    card.appendChild(head);
+
+                    ship.slots.forEach((slot, si) => {
+                        const row = document.createElement('label');
+                        row.style.cssText = 'display:block;margin:4px 0 0;';
+                        const select = document.createElement('select');
+                        categoryOptions().forEach(option => {
+                            const opt = document.createElement('option');
+                            opt.value = option;
+                            opt.text = option;
+                            select.add(opt);
+                        });
+                        select.value = slot.category;
+                        select.onchange = () => { slot.category = select.value; };
+                        const check = document.createElement('input');
+                        check.type = 'checkbox';
+                        check.checked = slot.enabled;
+                        check.style.marginLeft = '6px';
+                        check.onchange = () => { slot.enabled = check.checked; };
+                        row.appendChild(document.createTextNode('槽' + (si + 1) + ' '));
+                        row.appendChild(select);
+                        row.appendChild(check);
+                        row.appendChild(document.createTextNode(' Enable'));
+                        card.appendChild(row);
+                    });
+
+                    container.appendChild(card);
+                });
+            }
+
+            function initialize() {
+                const pointOptions = parseCSV(categories.PointMultiplier).map(row => row[1]);
+                const select = document.getElementById('point');
+                pointOptions.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option;
+                    opt.text = option;
+                    select.add(opt);
+                });
+                addShip();
+            }
+
+            function escapeHtml(s) {
+                return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            function calculate() {
+                const svdata = document.getElementById('svdata').value;
+                const p = document.getElementById('point').value;
+                const ignoreInv = document.getElementById('ignoreInv').checked;
+                const dedup = document.getElementById('dedup').checked;
+
+                const counts = new Map();
+                if (!ignoreInv) {
+                    const content = svdata.slice(7);
+                    const equip = JSON.parse(content);
+                    for (const item of equip.api_data.api_slot_item) {
+                        const key = item.api_slotitem_id.toString();
+                        counts.set(key, (counts.get(key) || 0) + 1);
+                    }
+                }
+
+                const EM = MultTable(categories.EventMultiplier);
+                const PM = MultTable(categories.PointMultiplier);
+
+                const rows = [];
+                for (const ship of ships) {
+                    const tables = ship.slots.filter(s => s.enabled).map(s => Table(categories[s.category]));
+                    if (tables.length === 0) {
+                        rows.push({ name: ship.name, best: null });
+                        continue;
+                    }
+                    const best = bestForShip(tables, counts, ignoreInv, EM, PM, p);
+                    if (best && dedup && !ignoreInv) {
+                        for (const it of best.items) {
+                            counts.set(it.ID, counts.get(it.ID) - 1);
+                        }
+                    }
+                    rows.push({ name: ship.name, best });
+                }
+
+                let html = '<table><thead><tr><th>舰娘</th><th>装备</th><th>倍率</th><th>火力</th><th>对空</th></tr></thead><tbody>';
+                for (const r of rows) {
+                    if (!r.best) {
+                        html += `<tr><td>${escapeHtml(r.name)}</td><td colspan="4">无可用装备组合（持有不足或全部槽位未启用）</td></tr>`;
+                    } else {
+                        html += `<tr><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.best.items.map(i => i.Name).join(' / '))}</td><td>${r.best.mult.toFixed(4)}</td><td>${r.best.power}</td><td>${r.best.air}</td></tr>`;
+                    }
+                }
+                html += '</tbody></table>';
+                document.getElementById('result').innerHTML = html;
+            }
+
+            window.onload = initialize;
+        </script>
+    </div>
+    <div class="particle-container"></div>
+    <script src="script.js"></script>
+</body>
+
+</html>
