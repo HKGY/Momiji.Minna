@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTCG · 推特头像卡牌对战</title>
+<style>
+  :root {
+    --bg: #170f33;
+    --panel: #251a4d;
+    --panel2: #2f2263;
+    --line: #4d3d8f;
+    --text: #f3efff;
+    --dim: #a99fd6;
+    --gold: #ffc93f;
+    --red: #ff5d7a;
+    --green: #43e58c;
+    --blue: #43c6ff;
+    --purple: #a06bff;
+    --pink: #ff7ad9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(155deg, #221049 0%, #170f33 45%, #0d1e45 100%);
+    color: var(--text);
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    user-select: none;
+  }
+  header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 8px 16px;
+    background: linear-gradient(90deg, rgba(160,107,255,.22), rgba(67,198,255,.14), rgba(255,122,217,.16));
+    border-bottom: 2px solid var(--line);
+  }
+  header h1 {
+    font-size: 17px; font-weight: 900;
+    background: linear-gradient(90deg, var(--gold), var(--pink), var(--blue));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header .hint { color: var(--dim); font-size: 12px; flex: 1; }
+  #open-gallery {
+    padding: 7px 18px; font-size: 13px; font-weight: bold; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    color: #fff; cursor: pointer; box-shadow: 0 2px 10px rgba(103, 88, 255, .45);
+  }
+  #open-gallery:hover { filter: brightness(1.15); }
+  #back-menu {
+    padding: 7px 14px; font-size: 13px; font-weight: bold; border: none; border-radius: 8px;
+    background: var(--panel2); color: var(--text); cursor: pointer;
+    border: 1px solid var(--line);
+  }
+  #back-menu:hover { filter: brightness(1.25); }
+
+  #main { flex: 1; display: flex; min-height: 0; }
+  #battlefield { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  .hero-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 6px 16px;
+  }
+  .hero {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--panel2); border: 3px solid var(--line);
+    border-radius: 16px; padding: 8px 18px; cursor: default;
+  }
+  #my-hero {
+    border-color: var(--green);
+    background: linear-gradient(135deg, rgba(67,229,140,.18), var(--panel2) 60%);
+    box-shadow: 0 0 14px rgba(67,229,140,.25);
+  }
+  #ai-hero {
+    border-color: var(--red);
+    background: linear-gradient(135deg, rgba(255,93,122,.18), var(--panel2) 60%);
+    box-shadow: 0 0 14px rgba(255,93,122,.25);
+  }
+  .hero .face-img {
+    width: 84px; height: 84px; border-radius: 50%; object-fit: cover;
+    border: 3px solid #fff; background: #fff; display: block;
+    box-shadow: 0 3px 12px rgba(0,0,0,.45);
+  }
+  .hero .hp {
+    color: #fff; font-weight: 900; font-size: 26px; min-width: 2ch; text-align: center;
+    text-shadow: 0 0 8px var(--red), 0 1px 2px rgba(0,0,0,.6);
+  }
+  .hero .label { color: var(--text); font-size: 14px; font-weight: bold; }
+  #ai-hero.targetable { border-color: var(--gold); cursor: crosshair; box-shadow: 0 0 14px rgba(255,201,63,.6); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 26px rgba(255,93,122,.9); } }
+
+  .meta { color: var(--dim); font-size: 13px; display: flex; gap: 14px; }
+  .meta b { color: var(--blue); font-size: 15px; }
+
+  .board {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 4px 16px; min-height: 168px;
+  }
+  #ai-board {
+    border-bottom: 2px dashed var(--line);
+    background: linear-gradient(180deg, rgba(255,93,122,.07), transparent 80%);
+  }
+  #my-board {
+    background: linear-gradient(0deg, rgba(67,229,140,.07), transparent 80%);
+  }
+
+  .minion {
+    width: 128px; border-radius: 12px; background: var(--panel2);
+    border: 2px solid var(--line); overflow: hidden; position: relative;
+    cursor: pointer; transition: transform .1s, border-color .1s, box-shadow .1s;
+    flex-shrink: 0;
+  }
+  .minion img { width: 100%; height: 96px; object-fit: cover; display: block; background: #fff; }
+  .minion .mname { font-size: 14px; text-align: center; padding: 3px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .minion.taunt { border-color: var(--purple); box-shadow: 0 0 10px rgba(160,107,255,.5), inset 0 0 0 1px var(--purple); }
+  .minion.shielded { box-shadow: 0 0 0 3px var(--gold), 0 0 14px rgba(255,201,63,.55); }
+  .minion.frozen { filter: saturate(.4) brightness(.85); }
+  .minion.frozen::after {
+    content: "❄"; position: absolute; top: 4px; right: 6px; font-size: 20px;
+    color: #9fdcff; text-shadow: 0 0 6px #4fc3ff; pointer-events: none;
+  }
+  .minion.stealthy { opacity: .55; border-style: dashed; }
+  .minion.stealthy::after {
+    content: "🌫"; position: absolute; top: 4px; right: 6px; font-size: 16px;
+    pointer-events: none;
+  }
+  .stats .atk.enraged { color: var(--red); text-shadow: 0 0 6px rgba(255,93,122,.8); }
+  .minion.ready { border-color: var(--green); box-shadow: 0 0 10px rgba(67,229,140,.45); }
+  .minion.ready:hover { transform: translateY(-3px); }
+  .minion.selected { border-color: var(--gold); box-shadow: 0 0 16px rgba(255,201,63,.75); transform: translateY(-4px); }
+  #ai-board .minion:hover { border-color: var(--red); box-shadow: 0 0 12px rgba(255,93,122,.55); }
+
+  .stats {
+    display: flex; justify-content: space-between; padding: 2px 7px 4px;
+    font-weight: bold; font-size: 16px;
+  }
+  .stats .atk { color: var(--gold); }
+  .stats .atk::before { content: "⚔"; font-size: 12px; margin-right: 2px; }
+  .stats .hp { color: var(--green); }
+  .stats .hp.hurt { color: var(--red); }
+  .stats .hp::before { content: "❤"; font-size: 12px; margin-right: 2px; }
+
+  #hand-row {
+    display: flex; align-items: flex-end; gap: 8px;
+    padding: 8px 16px 12px;
+    background: linear-gradient(180deg, rgba(160,107,255,.12), rgba(13,10,30,.9));
+    border-top: 2px solid var(--line); min-height: 236px;
+  }
+  #my-hand { display: flex; gap: 10px; flex: 1; overflow-x: auto; padding-bottom: 2px; }
+
+  .card {
+    width: 150px; border-radius: 12px; background: var(--panel2);
+    border: 2px solid var(--line); overflow: hidden; position: relative;
+    opacity: .55; flex-shrink: 0; transition: transform .12s, box-shadow .12s;
+  }
+  .card.playable { opacity: 1; cursor: pointer; border-color: var(--blue); box-shadow: 0 0 10px rgba(67,198,255,.35); }
+  .card.playable:hover { transform: translateY(-8px); border-color: var(--gold); box-shadow: 0 6px 18px rgba(255,201,63,.5); z-index: 2; }
+  .card img { width: 100%; height: 100px; object-fit: cover; display: block; background: #fff; }
+  .card .cost {
+    position: absolute; top: 4px; left: 4px; width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    color: #fff; font-weight: bold; font-size: 16px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    border: 2px solid #fff; z-index: 1; box-shadow: 0 1px 6px rgba(0,0,0,.5);
+  }
+  .card .cname { font-size: 14px; font-weight: bold; text-align: center; padding: 4px 5px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .ceffect { font-size: 12px; color: var(--dim); text-align: center; padding: 0 5px; height: 32px; overflow: hidden; line-height: 16px; }
+
+  /* 悬停大图预览 */
+  #preview {
+    position: fixed; left: 16px; top: 64px; width: 260px; z-index: 5;
+    background: var(--panel); border: 2px solid var(--gold); border-radius: 14px;
+    overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.6);
+    pointer-events: none;
+  }
+  #preview.hidden { display: none; }
+  #preview img { width: 100%; height: 240px; object-fit: cover; display: block; background: #fff; }
+  #preview .p-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px 2px; }
+  #preview .p-cost {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--blue); color: #0b1020;
+    font-weight: bold; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  #preview .p-name { font-size: 16px; font-weight: bold; }
+  #preview .p-title { font-size: 12px; color: var(--gold); padding: 0 10px; }
+  #preview .p-stats { font-size: 15px; font-weight: bold; padding: 4px 10px; }
+  #preview .p-stats .atk { color: var(--gold); margin-right: 12px; }
+  #preview .p-stats .hp { color: var(--green); }
+  #preview .p-effect { font-size: 13px; padding: 0 10px 4px; line-height: 1.5; }
+  #preview .p-flavor { font-size: 12px; color: var(--dim); font-style: italic; padding: 0 10px 10px; line-height: 1.5; }
+
+  #side {
+    width: 260px; background: var(--panel); border-left: 2px solid var(--line);
+    display: flex; flex-direction: column; padding: 10px;
+    gap: 8px;
+  }
+  #side h2 { font-size: 13px; color: var(--pink); }
+  #log {
+    flex: 1; overflow-y: auto; font-size: 12px; line-height: 1.7;
+    background: rgba(10, 8, 26, .8); border: 1px solid var(--line); border-radius: 10px; padding: 8px;
+  }
+  #log .turn { color: var(--gold); font-weight: bold; }
+  #log .good { color: var(--green); }
+  #log .bad { color: var(--red); }
+
+  #end-turn {
+    padding: 12px; font-size: 16px; font-weight: 900; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, var(--gold), #ff9d3f);
+    color: #3a2400; cursor: pointer; box-shadow: 0 3px 12px rgba(255, 157, 63, .45);
+  }
+  #end-turn:hover:not(:disabled) { filter: brightness(1.1); }
+  #end-turn:disabled { background: #4a4463; color: #8c86a8; cursor: not-allowed; box-shadow: none; }
+
+  #overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.75);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    z-index: 10;
+  }
+  #overlay.hidden { display: none; }
+  #overlay-text { font-size: 48px; font-weight: bold; }
+  #overlay-text.win { color: var(--gold); }
+  #overlay-text.lose { color: var(--red); }
+  #restart {
+    padding: 12px 32px; font-size: 16px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    color: #fff; font-weight: bold; cursor: pointer;
+    box-shadow: 0 3px 14px rgba(103, 88, 255, .5);
+  }
+
+  /* 开始菜单 */
+  #start-menu {
+    position: fixed; inset: 0; z-index: 7;
+    background: linear-gradient(155deg, #221049 0%, #170f33 45%, #0d1e45 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; text-align: center; padding: 24px;
+  }
+  #start-menu.hidden { display: none; }
+  #menu-avatars { display: flex; margin-bottom: 6px; }
+  #menu-avatars img {
+    width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
+    border: 3px solid #fff; background: #fff; margin: 0 -10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.5);
+  }
+  #menu-avatars img:nth-child(even) { transform: translateY(10px); }
+  #menu-title {
+    font-size: 72px; font-weight: 900; letter-spacing: 4px;
+    background: linear-gradient(90deg, var(--gold), var(--pink), var(--blue));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    line-height: 1.1;
+  }
+  #menu-sub { font-size: 18px; color: var(--dim); letter-spacing: 6px; margin-top: -10px; }
+  #menu-buttons { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+  #menu-buttons button {
+    padding: 14px 64px; font-size: 18px; font-weight: 900;
+    border: none; border-radius: 12px; cursor: pointer;
+  }
+  #start-game {
+    background: linear-gradient(135deg, var(--gold), #ff9d3f); color: #3a2400;
+    box-shadow: 0 4px 18px rgba(255, 157, 63, .5);
+  }
+  #menu-gallery {
+    background: linear-gradient(135deg, var(--blue), var(--purple)); color: #fff;
+    box-shadow: 0 4px 18px rgba(103, 88, 255, .5);
+  }
+  #menu-buttons button:hover { filter: brightness(1.12); }
+  #menu-disclaimer {
+    margin-top: 26px; max-width: 560px; font-size: 12px; line-height: 1.8;
+    color: var(--dim); border-top: 1px solid var(--line); padding-top: 14px;
+  }
+  #menu-disclaimer b { color: var(--text); }
+
+  /* 图鉴 */
+  #gallery {
+    position: fixed; inset: 0; background: rgba(10, 12, 18, .97); z-index: 8;
+    display: flex; flex-direction: column;
+  }
+  #gallery.hidden { display: none; }
+  #gallery-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  #gallery-head h2 {
+    font-size: 18px; font-weight: 900;
+    background: linear-gradient(90deg, var(--gold), var(--pink));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  #gallery-head .hint { color: var(--dim); font-size: 13px; flex: 1; }
+  #close-gallery {
+    padding: 8px 22px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, var(--gold), #ff9d3f); color: #3a2400; cursor: pointer;
+    box-shadow: 0 2px 10px rgba(255, 157, 63, .4);
+  }
+  #gallery-grid {
+    flex: 1; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 16px;
+    padding: 20px; align-content: flex-start; justify-content: center;
+  }
+  .g-card {
+    width: 200px; border-radius: 14px; background: var(--panel2);
+    border: 2px solid var(--line); overflow: hidden; position: relative;
+    cursor: pointer; transition: transform .12s, border-color .12s, box-shadow .12s;
+  }
+  .g-card:hover { transform: translateY(-4px); border-color: var(--blue); }
+  .g-card.chosen { border-color: var(--gold); box-shadow: 0 0 14px rgba(245, 197, 66, .5); }
+  .g-card.chosen::after {
+    content: "我的头像"; position: absolute; top: 8px; right: 8px;
+    background: var(--gold); color: #1a1400; font-size: 11px; font-weight: bold;
+    padding: 2px 8px; border-radius: 10px;
+  }
+  .g-card img { width: 100%; height: 170px; object-fit: cover; display: block; background: #fff; }
+  .g-card .g-cost {
+    position: absolute; top: 8px; left: 8px; width: 28px; height: 28px;
+    background: var(--blue); color: #0b1020; font-weight: bold; font-size: 15px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    border: 2px solid #0b1020;
+  }
+  .g-card .g-name { font-size: 15px; font-weight: bold; padding: 6px 10px 0; }
+  .g-card .g-title { font-size: 12px; color: var(--gold); padding: 0 10px; }
+  .g-card .g-stats { font-size: 14px; font-weight: bold; padding: 3px 10px; }
+  .g-card .g-stats .atk { color: var(--gold); margin-right: 12px; }
+  .g-card .g-stats .hp { color: var(--green); }
+  .g-card .g-effect { font-size: 12px; padding: 0 10px 3px; line-height: 1.5; min-height: 20px; }
+  .g-card .g-flavor { font-size: 11px; color: var(--dim); font-style: italic; padding: 0 10px 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>TTCG · 推特头像卡牌对战</h1>
+    <span class="hint">点手牌出牌 → 点亮起的己方随从选中 → 点敌方随从或敌方英雄进攻 → 结束回合</span>
+    <button id="back-menu">🏠 菜单</button>
+    <button id="open-gallery">📖 图鉴</button>
+  </header>
+
+  <div id="main">
+    <div id="battlefield">
+      <div class="hero-row">
+        <div class="hero" id="ai-hero">
+          <img class="face-img" id="ai-avatar" src="" alt="对手头像">
+          <span class="hp" id="ai-hp">30</span>
+          <span class="label" id="ai-name">对手</span>
+        </div>
+        <div class="meta">
+          <span>手牌 <b id="ai-hand-count">0</b></span>
+          <span>牌库 <b id="ai-deck-count">0</b></span>
+        </div>
+      </div>
+
+      <div class="board" id="ai-board"></div>
+      <div class="board" id="my-board"></div>
+
+      <div class="hero-row">
+        <div class="hero" id="my-hero">
+          <img class="face-img" id="my-avatar" src="" alt="我的头像">
+          <span class="hp" id="my-hp">30</span>
+          <span class="label" id="my-name">你</span>
+        </div>
+        <div class="meta">
+          <span>能量 <b id="my-energy">0/0</b></span>
+          <span>牌库 <b id="my-deck-count">0</b></span>
+        </div>
+      </div>
+
+      <div id="hand-row">
+        <div id="my-hand"></div>
+      </div>
+    </div>
+
+    <div id="side">
+      <button id="end-turn">结束回合</button>
+      <h2>战斗记录</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <div id="overlay" class="hidden">
+    <div id="overlay-text"></div>
+    <button id="restart">再来一局</button>
+  </div>
+
+  <div id="start-menu">
+    <div id="menu-avatars"></div>
+    <h1 id="menu-title">TTCG</h1>
+    <div id="menu-sub">推特头像卡牌对战</div>
+    <div id="menu-buttons">
+      <button id="start-game">⚔ 开始对战</button>
+      <button id="menu-gallery">📖 卡牌图鉴</button>
+    </div>
+    <div id="menu-disclaimer">
+      本游戏为同人娱乐作品，全部卡面来自网友头像的二次创作重绘，
+      卡牌名称、设定与数值均为虚构演绎，<b>所有角色均与现实中的人物无关</b>。
+    </div>
+  </div>
+
+  <div id="gallery" class="hidden">
+    <div id="gallery-head">
+      <h2>📖 卡牌图鉴</h2>
+      <span class="hint">全部 100 张卡。点击任意卡牌，将它设为你的英雄头像（自动保存）；对手的头像每局随机。</span>
+      <button id="close-gallery">关闭</button>
+    </div>
+    <div id="gallery-grid"></div>
+  </div>
+
+  <div id="preview" class="hidden">
+    <img id="p-img" src="" alt="">
+    <div class="p-head">
+      <span class="p-cost" id="p-cost"></span>
+      <span class="p-name" id="p-name"></span>
+    </div>
+    <div class="p-title" id="p-title"></div>
+    <div class="p-stats"><span class="atk" id="p-atk"></span><span class="hp" id="p-hp"></span></div>
+    <div class="p-effect" id="p-effect"></div>
+    <div class="p-flavor" id="p-flavor"></div>
+  </div>
+
+  <script src="cards.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
