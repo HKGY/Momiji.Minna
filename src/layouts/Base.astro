@@ -1,0 +1,63 @@
+---
+import { Image } from 'astro:assets';
+import avatar from '../assets/avatar.png';
+import { SITE_DESCRIPTION, SITE_HEADING, SITE_TITLE } from '../consts';
+import '../styles/global.css';
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+const { title, description = SITE_DESCRIPTION } = Astro.props;
+const pageTitle = title ? `${title} · ${SITE_TITLE}` : SITE_TITLE;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const nav = [
+	{ href: '/about.html', label: 'About' },
+	{ href: '/friends.html', label: 'Friends' },
+	{ href: '/rss.xml', label: 'RSS' },
+];
+const path = Astro.url.pathname.replace(/\.html$/, '');
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{pageTitle}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={canonical} />
+		<link rel="icon" href="/favicon.ico" />
+		<link rel="sitemap" href="/sitemap-index.xml" />
+		<link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href="/rss.xml" />
+		<meta property="og:title" content={title ?? SITE_HEADING} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonical} />
+		<meta property="og:site_name" content={SITE_TITLE} />
+	</head>
+	<body>
+		<div class="wrap">
+			<header class="site-header">
+				<a class="brand" href="/">
+					<Image src={avatar} alt="" width={56} height={56} loading="eager" />
+					{SITE_TITLE}
+				</a>
+				<nav>
+					{
+						nav.map(({ href, label }) => (
+							<a href={href} aria-current={href.replace(/\.html$/, '') === path ? 'page' : undefined}>
+								{label}
+							</a>
+						))
+					}
+				</nav>
+			</header>
+			<main>
+				<slot />
+			</main>
+			<footer class="site-footer">
+				© {new Date().getFullYear()} Kaguya Hana · Built with <a href="https://astro.build">Astro</a>
+			</footer>
+		</div>
+	</body>
+</html>

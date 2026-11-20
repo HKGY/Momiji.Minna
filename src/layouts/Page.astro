@@ -1,0 +1,15 @@
+---
+import Base from './Base.astro';
+
+// 给 src/pages/*.md 用的布局（about / friends）
+const { frontmatter } = Astro.props;
+---
+
+<Base title={frontmatter.title} description={frontmatter.description}>
+	<header class="post-head">
+		<h1>{frontmatter.title}</h1>
+	</header>
+	<article class="prose">
+		<slot />
+	</article>
+</Base>

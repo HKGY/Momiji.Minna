@@ -1,0 +1,74 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE_DESCRIPTION, SITE_HEADING } from '../consts';
+import { formatDate, getPosts, postUrl } from '../posts';
+
+const posts = await getPosts();
+
+// 合集 / 游戏 / 工具是手工维护的入口，新增时在这里加一行
+const collections = [
+	{
+		date: '2026-07',
+		title: '舰これ 2026夏活 全甲攻略合集',
+		href: '/kancolle/2026summer/index.html',
+		note: '反撃！第三十一戦隊の戦い ＋ フランス艦隊の躍動 · 五图全甲 · 攻略／捞船／出击总账',
+	},
+];
+const games = [
+	{
+		date: '2026-08',
+		title: 'TTCG 推特头像卡牌对战',
+		href: '/ttcg/index.html',
+		note: '100 位网友头像重绘卡牌 · 与 AI 对战 · 绘画千人斩企划',
+	},
+];
+const tools = [
+	{
+		date: '2026',
+		title: 'Multiplier Calculator 2026',
+		href: '/KancolleAirplaneMultiplierCalculator2026.html',
+		note: '2026夏活倍卡 · 多舰娘同时计算',
+	},
+	{ date: '2024', title: 'Multiplier Calculator 2024', href: '/KancolleAirplaneMultiplierCalculator2024.html' },
+];
+const sections = [
+	{ heading: '合集 / Collections', items: collections },
+	{ heading: '游戏 / Games', items: games },
+	{
+		heading: '文章 / Posts',
+		items: posts.map((post) => ({
+			date: formatDate(post.data.date),
+			title: post.data.title,
+			href: postUrl(post.id),
+			note: undefined,
+		})),
+	},
+	{ heading: '工具 / Tools', items: tools },
+];
+---
+
+<Base>
+	<section class="hero">
+		<h1>{SITE_HEADING}</h1>
+		<p>{SITE_DESCRIPTION}</p>
+	</section>
+
+	{
+		sections.map(({ heading, items }) => (
+			<>
+				<h2 class="section-title">{heading}</h2>
+				<ul class="post-list">
+					{items.map((item) => (
+						<li>
+							<time>{item.date}</time>
+							<div>
+								<a href={item.href}>{item.title}</a>
+								{item.note && <p class="note">{item.note}</p>}
+							</div>
+						</li>
+					))}
+				</ul>
+			</>
+		))
+	}
+</Base>

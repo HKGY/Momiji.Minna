@@ -1,0 +1,30 @@
+---
+import { render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { formatDate, getPosts, postUrl } from '../posts';
+
+export async function getStaticPaths() {
+	const posts = await getPosts();
+	return posts.map((post, i) => ({
+		params: { slug: post.id },
+		props: { post, newer: posts[i - 1], older: posts[i + 1] },
+	}));
+}
+
+const { post, newer, older } = Astro.props;
+const { Content } = await render(post);
+---
+
+<Base title={post.data.title} description={post.data.description}>
+	<header class="post-head">
+		<h1>{post.data.title}</h1>
+		<time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+	</header>
+	<article class="prose">
+		<Content />
+	</article>
+	<nav class="post-nav">
+		{older && <a href={postUrl(older.id)}>← {older.data.title}</a>}
+		{newer && <a href={postUrl(newer.id)}>{newer.data.title} →</a>}
+	</nav>
+</Base>

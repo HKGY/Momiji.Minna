@@ -1,0 +1,12 @@
+---
+// 合集目录页：<合集>/README.md → /kancolle/<合集>/index.html
+import { getCollection } from 'astro:content';
+import Doc from '../../../layouts/Doc.astro';
+
+export async function getStaticPaths() {
+	const docs = await getCollection('kancolle', ({ id }) => /^[^/]+\/index$/.test(id));
+	return docs.map((doc) => ({ params: { collection: doc.id.split('/')[0] }, props: { doc } }));
+}
+---
+
+<Doc doc={Astro.props.doc} />
