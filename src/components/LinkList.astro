@@ -1,0 +1,43 @@
+---
+import { COLUMNS, columnUrl, type ColumnId } from '../columns';
+
+// 首页和专栏页共用的「日期 + 标题 + 说明」列表
+interface Item {
+	date: string;
+	title: string;
+	href: string;
+	note?: string;
+	column?: ColumnId;
+}
+interface Props {
+	heading: string;
+	items: Item[];
+	/** 在标题后显示所属专栏的小标签（专栏页自己不需要） */
+	showColumn?: boolean;
+}
+const { heading, items, showColumn = false } = Astro.props;
+---
+
+{
+	items.length > 0 && (
+		<>
+			<h2 class="section-title">{heading}</h2>
+			<ul class="post-list">
+				{items.map((item) => (
+					<li>
+						<time>{item.date}</time>
+						<div>
+							<a href={item.href}>{item.title}</a>
+							{showColumn && item.column && (
+								<a class="tag" href={columnUrl(item.column)}>
+									{COLUMNS[item.column].short}
+								</a>
+							)}
+							{item.note && <p class="note">{item.note}</p>}
+						</div>
+					</li>
+				))}
+			</ul>
+		</>
+	)
+}

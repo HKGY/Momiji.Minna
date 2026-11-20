@@ -1,0 +1,5 @@
+# Cloudflare Pages 重定向。
+# 只放这两条：about.html / friends.html 的跳转页会和新的 /about/、/friends/ 目录重名，不能用静态跳转页。
+# 其余旧网址的跳转见 legacy-redirects.json（构建时生成静态跳转页）。
+/about.html /about/ 301
+/friends.html /friends/ 301

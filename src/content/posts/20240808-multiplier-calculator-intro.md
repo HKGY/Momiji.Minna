@@ -1,12 +1,14 @@
 ---
 title: "Kancolle Airplane Multiplier Calculator 2024"
 date: 2024-08-08
+column: kancolle
 description: "为艦これ 2024 夏活【Operation Menace】写的飞机倍卡计算器。"
+tags: [Kancolle, 工具]
 ---
 
 今天在群友的鼓动下为过气页游 艦これ（Kancolle） 的2024年夏季活动【Operation Menace】的异常复杂的飞机倍卡写了一个计算器
 
-全称 [Kancolle Airplane Multiplier Calculator 2024](/KancolleAirplaneMultiplierCalculator2024.html)
+全称 [Kancolle Airplane Multiplier Calculator 2024](/kancolle/calculator-2024/)
 
 只需复制（后面会说）一个 svdata 就能用最新最热的人工智能计算出来搭配飞机的最优解法，减轻提督们的脱发困难
 

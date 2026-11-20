@@ -1,0 +1,55 @@
+---
+// 专栏下的所有页面：
+//   /<专栏>/                 专栏页：汇总该专栏的文章，以及标了同一专栏的合集和工具
+//   /<专栏>/<slug>/          专栏文章
+//   /kancolle/<合集>/...     攻略合集里的文档（src/content/kancolle/）
+import { getCollection } from 'astro:content';
+import LinkList from '../../components/LinkList.astro';
+import { COLUMNS, COLUMN_IDS, type ColumnId } from '../../columns';
+import Base from '../../layouts/Base.astro';
+import Doc from '../../layouts/Doc.astro';
+import Post from '../../layouts/Post.astro';
+import { collections, tools } from '../../links';
+import { getPosts, getPostsWithNeighbors, postItem, postSlug } from '../../posts';
+
+export async function getStaticPaths() {
+	const indexes = COLUMN_IDS.map((column) => ({
+		params: { column, path: undefined },
+		props: { kind: 'index' as const },
+	}));
+	const posts = (await getPostsWithNeighbors())
+		.filter(({ post }) => post.data.column)
+		.map((props) => ({
+			params: { column: props.post.data.column, path: postSlug(props.post) },
+			props: { kind: 'post' as const, ...props },
+		}));
+	const docs = (await getCollection('kancolle')).map((doc) => ({
+		params: { column: 'kancolle', path: doc.id },
+		props: { kind: 'doc' as const, doc },
+	}));
+	return [...indexes, ...posts, ...docs];
+}
+
+const { props } = Astro;
+const id = Astro.params.column as ColumnId;
+const column = COLUMNS[id];
+const columnPosts = props.kind === 'index' ? (await getPosts()).filter((post) => post.data.column === id) : [];
+const inColumn = <T extends { column?: ColumnId }>(items: T[]) => items.filter((item) => item.column === id);
+---
+
+{props.kind === 'post' && <Post post={props.post} newer={props.newer} older={props.older} />}
+{props.kind === 'doc' && <Doc doc={props.doc} />}
+{
+	props.kind === 'index' && (
+		<Base title={column.title} description={column.description}>
+			<section class="hero">
+				<h1>{column.title}</h1>
+				<p>{column.description}</p>
+			</section>
+
+			<LinkList heading="文章 / Posts" items={columnPosts.map(postItem)} />
+			<LinkList heading="合集 / Collections" items={inColumn(collections)} />
+			<LinkList heading="工具 / Tools" items={inColumn(tools)} />
+		</Base>
+	)
+}

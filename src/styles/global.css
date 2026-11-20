@@ -167,6 +167,46 @@ a:hover {
 	font-size: 0.85rem;
 	line-height: 1.6;
 }
+.tag {
+	display: inline-block;
+	margin-left: 0.5rem;
+	padding: 0 0.5em;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	color: var(--muted) !important;
+	font-size: 0.72rem;
+	line-height: 1.7;
+	vertical-align: 0.12em;
+	white-space: nowrap;
+}
+.tag:hover {
+	border-color: var(--accent);
+	color: var(--accent) !important;
+	text-decoration: none;
+}
+.hashtags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.2rem 0.9rem;
+	margin: 0.6rem 0 0;
+	font-size: 0.9rem;
+}
+.hashtags a {
+	color: var(--muted);
+}
+.hashtags a:hover {
+	color: var(--accent);
+	text-decoration: none;
+}
+.hashtags .count {
+	margin-left: 0.25em;
+	font: 0.75em var(--mono);
+	opacity: 0.7;
+}
+.hashtags.cloud {
+	gap: 0.6rem 1.4rem;
+	font-size: 1.1rem;
+}
 .post-list a:hover {
 	color: var(--accent);
 	text-decoration: none;
@@ -319,6 +359,26 @@ a:hover {
 .prose li > ol {
 	margin: 0.2em 0;
 }
-.prose.doc img {
+.prose img {
 	cursor: zoom-in;
+}
+
+/* ---------- 折叠块：Markdown 里写 <details><summary>标题</summary> … </details> ---------- */
+.prose details {
+	margin: 1.1em 0;
+	padding: 0.5rem 1rem;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+}
+.prose summary {
+	color: var(--muted);
+	cursor: pointer;
+	user-select: none;
+}
+.prose summary:hover,
+.prose details[open] > summary {
+	color: var(--fg);
+}
+.prose details > :last-child {
+	margin-bottom: 0.4em;
 }

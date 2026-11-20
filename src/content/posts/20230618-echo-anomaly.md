@@ -2,6 +2,7 @@
 title: "樱花妹的 Echo Anomaly 之旅"
 date: 2023-06-18
 description: "在北京蹭一块 XMA 牌子的 Ingress Echo Anomaly 游记。"
+tags: [Ingress, 游记]
 ---
 
 笔者（@KaguyaHana：读作“花花”写作emoji:Cherry Blossom）的对象（@Fhvfv）邀请笔者来到北京游玩，于是笔者临时起意，在北京这么一个 agent 遍地开花的地方，蹭个 XMA 的牌子也是轻而易举罢。

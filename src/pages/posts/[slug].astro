@@ -1,0 +1,13 @@
+---
+// 不属于任何专栏的文章：/posts/<slug>/
+import Post from '../../layouts/Post.astro';
+import { getPostsWithNeighbors, postSlug } from '../../posts';
+
+export async function getStaticPaths() {
+	return (await getPostsWithNeighbors())
+		.filter(({ post }) => !post.data.column)
+		.map((props) => ({ params: { slug: postSlug(props.post) }, props }));
+}
+---
+
+<Post {...Astro.props} />

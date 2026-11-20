@@ -1,0 +1,23 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getTags, tagUrl } from '../../posts';
+
+const tags = await getTags();
+---
+
+<Base title="Tags" description="全部 hashtag">
+	<section class="hero">
+		<h1>Tags</h1>
+		<p>{tags.length} 个 hashtag</p>
+	</section>
+	<p class="hashtags cloud">
+		{
+			tags.map(({ tag, count }) => (
+				<a href={tagUrl(tag)}>
+					#{tag}
+					<span class="count">{count}</span>
+				</a>
+			))
+		}
+	</p>
+</Base>

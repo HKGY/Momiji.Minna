@@ -1,9 +1,10 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { render } from 'astro:content';
+import { docUrl } from '../kancolle-docs';
 import Base from './Base.astro';
 
-// 合集里的一页。doc.id 形如 2026summer/02-海域攻略/E1/概览，目录页是 2026summer/index
+// 合集里的一页。doc.id 形如 2026summer/e1，目录页就是合集名 2026summer（规则见 src/kancolle-docs.ts）
 interface Props {
 	doc: CollectionEntry<'kancolle'>;
 }
@@ -11,26 +12,15 @@ const { doc } = Astro.props;
 const { Content, headings } = await render(doc);
 const title = headings.find((h) => h.depth === 1)?.text ?? doc.id.split('/').pop();
 const [collection] = doc.id.split('/');
-const isIndex = doc.id === `${collection}/index`;
+const isIndex = doc.id === collection;
 ---
 
 <Base title={title}>
-	{
-		!isIndex && (
-			<p class="crumb">
-				<a href={`/kancolle/${collection}/index.html`}>← 合集目录</a>
-			</p>
-		)
-	}
+	<p class="crumb">
+		<a href="/kancolle/">Kancolle 专栏</a>
+		{!isIndex && <> / <a href={docUrl(collection)}>合集目录</a></>}
+	</p>
 	<article class="prose doc">
 		<Content />
 	</article>
 </Base>
-
-<script>
-	// 点击正文图片在新标签页打开原尺寸
-	document.querySelector('.prose.doc')?.addEventListener('click', (e) => {
-		const img = e.target instanceof HTMLImageElement ? e.target : null;
-		if (img && !img.closest('a')) window.open(img.currentSrc || img.src, '_blank', 'noopener');
-	});
-</script>
