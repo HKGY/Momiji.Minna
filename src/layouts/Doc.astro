@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { render } from 'astro:content';
+import { COLUMNS } from '../columns';
 import { docUrl } from '../kancolle-docs';
 import Base from './Base.astro';
 
@@ -15,7 +16,7 @@ const [collection] = doc.id.split('/');
 const isIndex = doc.id === collection;
 ---
 
-<Base title={title}>
+<Base title={title} description={COLUMNS.kancolle.description}>
 	<p class="crumb">
 		<a href="/kancolle/">Kancolle 专栏</a>
 		{!isIndex && <> / <a href={docUrl(collection)}>合集目录</a></>}

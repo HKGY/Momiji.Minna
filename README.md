@@ -62,6 +62,7 @@ npm run new -- my-slug "文章标题" --column kancolle
 - 文章图片：放 `src/assets/`，在 Markdown 里用相对路径引用，构建时自动压缩成 webp
 - 原样发布的静态文件：`public/`（MUG、ttcg、red.html，以及合集里供下载的 csv 等）
 - 站点标题、域名：`src/consts.ts`；样式：`src/styles/global.css`
+- 分享卡片（X / Telegram 等的链接预览）：标题和摘要取自文章的 `title`、`description`，图片是 `public/og.png`；换头像后跑 `node scripts/make-og.mjs` 重新生成
 
 ## 旧网址
 
